@@ -432,7 +432,7 @@ h1 {
     border: none; /* Ensure no extra border */
 }
 
-/* Drag and Drop Visual Feedback - FIXED */
+/* Drag and Drop Visual Feedback */
 .student-draggable.dragging {
     opacity: 0.8; /* Slightly less opaque */
     border: 2px dotted #3498db; /* Blue dotted border on the student name */
@@ -443,11 +443,12 @@ h1 {
     cursor: grabbing;
 }
 
-.seat-item.drag-over {
-    border: 2px solid #2ecc71; /* Solid green border on the target seat */
-    background-color: #e6ffe6; /* Light green background for target seat */
-    box-shadow: 0 0 0 4px rgba(46, 204, 113, 0.2); /* Outer glow */
-    transform: scale(1.01);
+/* Highlight for the specific student-draggable target */
+.student-draggable.drag-over {
+    border: 2px solid #2ecc71; /* Solid green border on the target student/empty spot */
+    background-color: #d6ffe6; /* Light green background for target */
+    box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.2); /* Outer glow */
+    transform: scale(1.02); /* Slightly grow to indicate active target */
 }
 
 /* --- Responsive Design --- */
