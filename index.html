@@ -8,15 +8,15 @@
 </head>
 <body>
     <div id="loginOverlay" class="login-overlay">
-        <div class="login-box">
-            <h2>Class Seating Login</h2>
-            <div class="form-group">
+        <div class="login-card">
+            <h2>Login to Class Seating</h2>
+            <div class="login-form-group">
                 <label for="loginId">User ID:</label>
-                <input type="text" id="loginId" required>
+                <input type="text" id="loginId" placeholder="Enter User ID">
             </div>
-            <div class="form-group">
+            <div class="login-form-group">
                 <label for="loginPassword">Password:</label>
-                <input type="password" id="loginPassword" required>
+                <input type="password" id="loginPassword" placeholder="Enter Password">
             </div>
             <button onclick="checkLogin()">Login</button>
             <p id="loginErrorMessage" class="error-message"></p>
@@ -24,17 +24,14 @@
     </div>
 
     <div class="container">
-        <div class="header-section">
-            <h1>Class Seating Arrangement Rotator</h1>
-            <button class="logout-button" onclick="logout()">Logout</button>
-        </div>
-        <p class="subtitle">Seats rotate within their row based on the date. Changes sync across all browsers.</p>
-        <p class="note">Rotation cycle starts relative to Jan 1, 2024 (a Monday).</p>
+        <h1>Class Seating Arrangement Rotator</h1>
+        <p class="subtitle">Dynamically arranges student seating based on the date.</p>
+        <p class="note">Rotation within each row shifts by one position each week, starting from January 1, 2024 (a Monday).</p>
 
         <div class="form-section">
             <div class="form-group">
                 <label for="yearInput">Year:</label>
-                <input type="number" id="yearInput" required min="2000" max="2100">
+                <input type="number" id="yearInput" required min="2024" max="2099">
             </div>
             <div class="form-group">
                 <label for="monthInput">Month (1-12):</label>
@@ -44,23 +41,39 @@
                 <label for="dayInput">Day (1-31):</label>
                 <input type="number" id="dayInput" required min="1" max="31">
             </div>
-            <button onclick="displaySeating()">Get Seating</button>
+            <button onclick="displaySeating()">View Seating</button>
+        </div>
+
+        <div class="action-buttons">
+            <button onclick="saveSeating()">Save Arrangement</button>
+            <button onclick="logout()">Logout</button>
         </div>
 
         <p id="errorMessage" class="error-message"></p>
 
-        <div class="actions-section">
-            <button onclick="saveSeating()">Save Current Arrangement</button>
-            <button class="reset-button" onclick="resetSeatingToDefault()">Reset to Default</button>
+        <div class="instructions">
+            <h2>Re-arranging Seats:</h2>
+            <ol>
+                <li>Click and drag a student's name.</li>
+                <li>Drop the name onto another student to swap their places.</li>
+                <li>Drop the name onto an "Empty" spot to move the student there.</li>
+                <li>Click "Save Arrangement" to save your changes. This becomes the new base arrangement for future date-based rotations.</li>
+                <li>To revert to the original predefined seating, click the "Reset to Original" button at the very bottom of the page.</li>
+            </ol>
         </div>
 
         <div id="seatingOutput" class="seating-chart">
         </div>
+
+        <div class="bottom-action-buttons">
+            <button onclick="resetSeatingToDefault()">Reset to Original Seating</button>
+        </div>
+
     </div>
 
-    <script type="module" src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-    <script type="module" src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
