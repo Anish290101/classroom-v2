@@ -1,8 +1,6 @@
-// --- Firebase SDK Imports ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
-
-// --- Initial Seating Data (This will be the default if no data exists in Firestore) ---
+// --- Initial Seating Data (This will be our fallback if Firestore is empty initially) ---
+// This array represents the DEFAULT seating arrangement.
+// It will be used if no saved arrangement is found in Firestore.
 let initialSeating = [
     [["Riddhima", "Samishtha"], ["Yashika", "Harshi"], ["Aditri", "Nitika"], ["Tanushka", "Nivedita"], ["Anaisha", "Ishani"], ["Avika", "Ayesha"]],
     [["Aadya", "Anushree"], ["Yashasvi", "Tanishee"], ["Sanskriti", "Samriddhi"], ["Vedant", "Saad"], ["Abhiraj", "Vipul"], ["Shaurya", "Siddhart"]],
@@ -10,7 +8,8 @@ let initialSeating = [
     [["Aryaman", null], ["Hammad", null], ["Affan", null], ["Aadhyan", "Aarav"], ["Svakksh", "Tanay"], ["Prakhyat", "Kartik"]]
 ];
 
-// --- Firebase Configuration (PASTE YOUR ACTUAL CONFIG HERE) ---
+// --- Firebase Project Configuration ---
+// !!! IMPORTANT: REPLACE THIS ENTIRE firebaseConfig OBJECT WITH THE ONE YOU GOT FROM YOUR FIREBASE CONSOLE !!!
 const firebaseConfig = {
   apiKey: "AIzaSyAQByuEgiIbjRWrvOHEzPWlJxd0nfV_WkY",
   authDomain: "classseatingapp-473e0.firebaseapp.com",
@@ -21,10 +20,16 @@ const firebaseConfig = {
   measurementId: "G-JTMX518FQ4"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const seatingDocRef = doc(db, "class_data", "seating_arrangement"); // Document path for your seating data
+// Initialize Firebase App
+firebase.initializeApp(firebaseConfig);
+
+// Get a reference to the Firestore database service
+const db = firebase.firestore();
+
+// Define the collection and document name for your seating data in Firestore.
+// All browsers will read/write to this specific document.
+const SEATING_COLLECTION = "classSeating";       // Name of your Firestore collection
+const SEATING_DOCUMENT = "defaultArrangement"; // Name of the document within that collection
 
 // --- Login Credentials (Hardcoded - REMEMBER THIS IS NOT SECURE FOR SENSITIVE DATA) ---
 const CORRECT_ID = "class10b";
@@ -35,328 +40,405 @@ const LOGIN_TIMEOUT_MS = 30 * 60 * 1000;      // 30 minutes in milliseconds
 
 // --- Login Function ---
 function checkLogin() {
-    const userIdInput = document.getElementById('loginId').value;
-    const passwordInput = document.getElementById('loginPassword').value;
+    const loginId = document.getElementById('loginId').value;
+    const loginPassword = document.getElementById('loginPassword').value;
     const loginErrorMessage = document.getElementById('loginErrorMessage');
-    const loginOverlay = document.getElementById('loginOverlay');
-    const mainContainer = document.querySelector('.container');
 
-    loginErrorMessage.textContent = ''; // Clear previous messages
-
-    if (userIdInput === CORRECT_ID && passwordInput === CORRECT_PASSWORD) {
-        localStorage.setItem(LOGIN_STATUS_KEY, 'true');      // Mark as logged in
-        localStorage.setItem(LOGIN_TIMESTAMP_KEY, Date.now().toString()); // Store current timestamp
-        loginOverlay.style.display = 'none'; // Hide the login overlay
-        mainContainer.style.display = 'block'; // Show the main content
-        initializeSeatingApp(); // Initialize the app after successful login
+    if (loginId === CORRECT_ID && loginPassword === CORRECT_PASSWORD) {
+        localStorage.setItem(LOGIN_STATUS_KEY, 'true');
+        localStorage.setItem(LOGIN_TIMESTAMP_KEY, Date.now().toString());
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.querySelector('.container').style.display = 'block';
+        initializeSeatingApp(); // Call the initialization function after successful login
     } else {
-        loginErrorMessage.textContent = "Invalid User ID or Password. Please try again.";
-        loginErrorMessage.className = 'error-message'; // Ensure error styling
+        loginErrorMessage.textContent = "Invalid User ID or Password.";
     }
 }
 
 // --- Logout Function ---
 function logout() {
-    localStorage.removeItem(LOGIN_STATUS_KEY);      // Clear login status
-    localStorage.removeItem(LOGIN_TIMESTAMP_KEY);   // Clear login timestamp
-    window.location.reload(); // Reload the page to show the login screen
+    const confirmation = confirm("Are you sure you want to log out?");
+    if (confirmation) {
+        localStorage.removeItem(LOGIN_STATUS_KEY);
+        localStorage.removeItem(LOGIN_TIMESTAMP_KEY);
+        location.reload(); // Reload the page to show login overlay
+    }
 }
 
 // --- Initialize App Function (called after successful login or on page load if already logged in) ---
-function initializeSeatingApp() {
+async function initializeSeatingApp() {
+    // Set current date inputs
     const today = new Date();
     document.getElementById('yearInput').value = today.getFullYear();
     document.getElementById('monthInput').value = today.getMonth() + 1;
     document.getElementById('dayInput').value = today.getDate();
 
-    setupFirestoreListener(); // Set up real-time listener for seating data
+    // Load the seating arrangement from Firestore FIRST
+    await loadSeating();
+    // Then display the seating for the current date based on the loaded arrangement
+    displaySeating();
 }
 
-// --- NEW: Firestore Real-time Listener ---
-function setupFirestoreListener() {
-    onSnapshot(seatingDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (data && data.seating) {
-                initialSeating = data.seating; // Update local data with synced data
-                displaySeating(); // Re-render the display
-                const message = document.getElementById('errorMessage');
-                message.textContent = "Seating arrangement synced!";
-                message.className = 'info-message';
-                setTimeout(() => {
-                    message.textContent = '';
-                    message.className = 'error-message'; // Reset to default class
-                }, 2000);
-            }
-        } else {
-            console.log("No seating data found in Firestore, uploading default.");
-            // If no data exists in Firestore, upload the current initialSeating as the default
-            setDoc(seatingDocRef, { seating: initialSeating })
-                .then(() => {
-                    console.log("Default seating uploaded to Firestore.");
-                    displaySeating(); // Display default (which is now in Firestore)
-                })
-                .catch(error => {
-                    console.error("Error uploading default seating:", error);
-                    const message = document.getElementById('errorMessage');
-                    message.textContent = "Error setting up initial data: " + error.message;
-                    message.className = 'error-message';
-                });
-        }
-    }, (error) => {
-        console.error("Error getting real-time updates from Firestore:", error);
-        const message = document.getElementById('errorMessage');
-        message.textContent = "Error syncing data: " + error.message;
-        message.className = 'error-message';
-    });
-}
-
-// --- Core Logic Functions (remain mostly the same) ---
-
-function rotateSingleRowJS(rowData, rotationCount) {
-    if (rowData.length === 0) return [];
-    const effectiveRotation = (rotationCount % rowData.length + rowData.length) % rowData.length;
-    return rowData.slice(-effectiveRotation).concat(rowData.slice(0, -effectiveRotation));
-}
-
-function rotateSeatingRowWiseJS(seating, rotationCount) {
-    return seating.map(row => rotateSingleRowJS(row, rotationCount));
-}
-
+// --- Date Calculation Functions ---
 function getRotationWeekFromDateJS(year, month, day) {
-    const startDate = new Date(2024, 0, 1);
+    const startDate = new Date(2024, 0, 1); // January 1, 2024 (month is 0-indexed)
     const targetDate = new Date(year, month - 1, day);
-    if (isNaN(targetDate.getTime()) || targetDate.getFullYear() !== year || targetDate.getMonth() !== (month - 1) || targetDate.getDate() !== day) return -1;
-    const diffTime = targetDate.getTime() - startDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    return Math.floor(diffDays / 7);
+
+    // Calculate the difference in milliseconds
+    const diffTime = Math.abs(targetDate.getTime() - startDate.getTime());
+    // Convert to days, then to weeks
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Get the day of the week for startDate (0 for Sunday, 1 for Monday, etc.)
+    const startDayOfWeek = startDate.getDay(); // 1 for Monday, Jan 1, 2024
+
+    // Adjust diffDays based on start day to ensure week 0 starts on Monday, Jan 1, 2024
+    let effectiveDiffDays = diffDays;
+    if (targetDate < startDate) {
+        // If target date is before start date, rotation should go backwards
+        effectiveDiffDays = -diffDays;
+        if (startDayOfWeek !== 1) {
+            effectiveDiffDays -= (startDayOfWeek - 1);
+        }
+    } else {
+        // If target date is after start date
+        if (startDayOfWeek !== 1) {
+            effectiveDiffDays += (7 - startDayOfWeek + 1);
+        }
+    }
+
+    // A week is 7 days. Integer division gives the number of full weeks.
+    const rotationWeek = Math.floor(effectiveDiffDays / 7);
+
+    return rotationWeek;
 }
 
-function validMonthJS(m) {
-    return m >= 1 && m <= 12;
+function rotateSingleRowJS(row, rotations) {
+    const numSeats = row.length;
+    if (numSeats === 0) return row;
+
+    const actualRotations = rotations % numSeats;
+    if (actualRotations === 0) return row;
+
+    if (actualRotations > 0) {
+        // Rotate right (positive rotations)
+        return [...row.slice(numSeats - actualRotations), ...row.slice(0, numSeats - actualRotations)];
+    } else {
+        // Rotate left (negative rotations)
+        return [...row.slice(-actualRotations), ...row.slice(0, -actualRotations)];
+    }
 }
 
-function validDayJS(d, m, y) {
-    const date = new Date(y, m - 1, d);
-    return date.getFullYear() === y && date.getMonth() === (m - 1) && date.getDate() === d;
+function rotateSeatingRowWiseJS(seatingArrangement, rotations) {
+    return seatingArrangement.map(row => rotateSingleRowJS(row, rotations));
 }
 
-// --- Drag and Drop Variables ---
+// --- Display Seating Function ---
+let currentSeating = []; // Store the currently displayed seating for drag & drop
+
+function displaySeating() {
+    const year = parseInt(document.getElementById('yearInput').value);
+    const month = parseInt(document.getElementById('monthInput').value);
+    const day = parseInt(document.getElementById('dayInput').value);
+    const errorMessage = document.getElementById('errorMessage');
+    const seatingOutput = document.getElementById('seatingOutput');
+
+    // Basic date validation
+    if (isNaN(year) || isNaN(month) || isNaN(day) ||
+        year < 2024 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31) {
+        errorMessage.textContent = "Please enter a valid date between 2024 and 2099.";
+        errorMessage.className = 'error-message';
+        seatingOutput.innerHTML = '';
+        return;
+    }
+
+    // Check for valid day for the given month
+    const testDate = new Date(year, month - 1, day);
+    if (testDate.getFullYear() !== year || testDate.getMonth() !== month - 1 || testDate.getDate() !== day) {
+        errorMessage.textContent = "Invalid date for the selected month.";
+        errorMessage.className = 'error-message';
+        seatingOutput.innerHTML = '';
+        return;
+    }
+
+    errorMessage.textContent = ''; // Clear any previous error messages
+
+    const rotationWeek = getRotationWeekFromDateJS(year, month, day);
+    // Use the potentially loaded 'initialSeating' for rotation
+    const rotatedSeating = rotateSeatingRowWiseJS(initialSeating, rotationWeek);
+    currentSeating = JSON.parse(JSON.stringify(rotatedSeating)); // Deep copy for drag & drop
+
+    let html = '';
+    rotatedSeating.forEach((row, rowIndex) => {
+        html += `<div class="seating-row">`;
+        row.forEach((seat, seatIndex) => {
+            html += `<div class="seat-item" data-row="${rowIndex}" data-seat="${seatIndex}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event)">`;
+            seat.forEach(student => {
+                if (student) {
+                    html += `<div class="student-draggable" draggable="true" ondragstart="dragStart(event)">${student}</div>`;
+                } else {
+                    html += `<div class="student-draggable empty-spot" draggable="true" ondragstart="dragStart(event)">Empty</div>`;
+                }
+            });
+            html += `</div>`;
+        });
+        html += `</div>`;
+    });
+
+    seatingOutput.innerHTML = html;
+}
+
+// --- Drag and Drop Logic ---
 let draggedStudent = null;
-let draggedStudentOriginalSeat = { row: -1, seat: -1, index: -1 };
-let rotatedSeatingGlobal = []; // Keep this global as it's the currently displayed state
+let draggedFromRow = null;
+let draggedFromSeat = null;
 
-// --- Drag and Drop Functions ---
-function dragStart(event, rowIdx, seatIdx, studentIndexInSeat) {
-    draggedStudent = { name: event.target.textContent, row: rowIdx, seat: seatIdx, index: studentIndexInSeat };
-    draggedStudentOriginalSeat = { row: rowIdx, seat: seatIdx, index: studentIndexInSeat };
-    event.dataTransfer.setData("text/plain", event.target.textContent);
-    event.target.classList.add("dragging");
+function dragStart(event) {
+    draggedStudent = event.target.textContent;
+    const parentSeatItem = event.target.closest('.seat-item');
+    draggedFromRow = parseInt(parentSeatItem.dataset.row);
+    draggedFromSeat = parseInt(parentSeatItem.dataset.seat);
+
+    event.dataTransfer.setData("text/plain", draggedStudent);
+    event.target.classList.add('dragging');
 }
 
 function dragOver(event) {
-    event.preventDefault();
-    event.target.classList.add("drag-over-student");
+    event.preventDefault(); // Allows drop
+    event.target.classList.add('drag-over');
 }
 
 function dragLeave(event) {
-    event.target.classList.remove("drag-over-student");
+    event.target.classList.remove('drag-over');
 }
 
-function drop(event, targetRowIdx, targetSeatIdx, targetStudentIndexInSeat) {
+function drop(event) {
     event.preventDefault();
-    event.target.classList.remove("drag-over-student");
+    event.target.classList.remove('drag-over');
 
-    if (!draggedStudent) {
-        return;
+    const droppedOnSeatItem = event.target.closest('.seat-item');
+    const droppedOnRow = parseInt(droppedOnSeatItem.dataset.row);
+    const droppedOnSeat = parseInt(droppedOnSeatItem.dataset.seat);
+
+    if (draggedFromRow === null || draggedFromSeat === null) return; // Should not happen
+
+    let targetStudentDiv = null;
+    if (event.target.classList.contains('student-draggable')) {
+        targetStudentDiv = event.target;
+    } else {
+        // If dropped directly on the seat-item div, find the student inside
+        targetStudentDiv = droppedOnSeatItem.querySelector('.student-draggable');
     }
 
-    // Create a deep copy of the global rotated seating for manipulation
-    const currentDisplayedSeating = JSON.parse(JSON.stringify(rotatedSeatingGlobal));
+    const targetStudentName = targetStudentDiv ? targetStudentDiv.textContent : null;
 
-    const originalRow = draggedStudentOriginalSeat.row;
-    const originalSeat = draggedStudentOriginalSeat.seat;
-    const originalStudentIndex = draggedStudentOriginalSeat.index; // 0 or 1
+    // Remove the dragged student from its original position
+    const originalSeatContent = initialSeating[draggedFromRow][draggedFromSeat];
+    const originalStudentIndex = originalSeatContent.indexOf(draggedStudent === "Empty" ? null : draggedStudent);
 
-    const targetRow = targetRowIdx;
-    const targetSeat = targetSeatIdx;
-    const targetStudentIndex = targetStudentIndexInSeat; // 0 or 1
+    if (originalStudentIndex > -1) {
+        originalSeatContent[originalStudentIndex] = null; // Mark original spot as empty
+    }
 
-    // Get the name of the student being moved
-    const studentToMoveName = currentDisplayedSeating[originalRow][originalSeat][originalStudentIndex];
-    // Get the name of the student currently at the target spot (could be null if empty)
-    const targetStudentName = currentDisplayedSeating[targetRow][targetSeat][targetStudentIndex];
 
-    // Perform the move/swap operation directly on the deep copy:
-    // 1. Place the dragged student into the target spot
-    currentDisplayedSeating[targetRow][targetSeat][targetStudentIndex] = studentToMoveName;
+    if (targetStudentName && targetStudentName !== "Empty") {
+        // Drop on another student: swap places
+        const targetStudentActual = currentSeating[droppedOnRow][droppedOnSeat].find(name => name !== null); // Find the actual student name
 
-    // 2. Place the target student (if any) into the original spot
-    currentDisplayedSeating[originalRow][originalSeat][originalStudentIndex] = targetStudentName;
+        // Find the index of the student being dropped ONTO
+        const targetStudentIndex = initialSeating[droppedOnRow][droppedOnSeat].indexOf(targetStudentActual);
 
-    // --- Reverse rotation to update initialSeating based on the modified currentDisplayedSeating ---
-    const currentRotationCount = getRotationWeekFromDateJS(
-        parseInt(document.getElementById('yearInput').value),
-        parseInt(document.getElementById('monthInput').value),
-        parseInt(document.getElementById('dayInput').value)
-    );
+        if (targetStudentIndex > -1) {
+            initialSeating[draggedFromRow][draggedFromSeat][originalStudentIndex] = targetStudentActual; // Move target student to original spot
+            initialSeating[droppedOnRow][droppedOnSeat][targetStudentIndex] = (draggedStudent === "Empty" ? null : draggedStudent); // Move dragged student to target spot
+        } else {
+             // If target student was null, then replace null with dragged student
+             if (initialSeating[droppedOnRow][droppedOnSeat][0] === null) {
+                initialSeating[droppedOnRow][droppedOnSeat][0] = (draggedStudent === "Empty" ? null : draggedStudent);
+             } else if (initialSeating[droppedOnRow][droppedOnSeat][1] === null) {
+                initialSeating[droppedOnRow][droppedOnSeat][1] = (draggedStudent === "Empty" ? null : draggedStudent);
+             }
+        }
+    } else {
+        // Drop on an "Empty" spot or directly on a seat-item
+        const targetSeat = initialSeating[droppedOnRow][droppedOnSeat];
+        let placed = false;
+        for(let i=0; i < targetSeat.length; i++) {
+            if (targetSeat[i] === null) {
+                targetSeat[i] = (draggedStudent === "Empty" ? null : draggedStudent);
+                placed = true;
+                break;
+            }
+        }
+        if (!placed) {
+            // If both spots are taken, it means the 'Empty' visual was part of a full seat.
+            // Restore the dragged student to its original position if it was a real student.
+            if (draggedStudent !== "Empty" && originalStudentIndex > -1) {
+                 initialSeating[draggedFromRow][draggedFromSeat][originalStudentIndex] = (draggedStudent === "Empty" ? null : draggedStudent);
+            }
+        }
+    }
 
-    let newInitialSeating = [];
-    currentDisplayedSeating.forEach((row, rIdx) => {
-        const effectiveRotation = (currentRotationCount % row.length + row.length) % row.length;
-        const reverseRotationAmount = (row.length - effectiveRotation) % row.length;
-        newInitialSeating.push(rotateSingleRowJS(row, reverseRotationAmount));
+    // Clean up nulls in the original seat if a student moved from a 2-person seat
+    const originalSeat = initialSeating[draggedFromRow][draggedFromSeat];
+    if (originalSeat.length === 2 && originalSeat[0] === null && originalSeat[1] !== null) {
+        // Shift student to the first position if first is empty and second is not
+        initialSeating[draggedFromRow][draggedFromSeat] = [originalSeat[1], null];
+    }
+
+
+    // Re-display the seating chart to reflect changes
+    displaySeating();
+
+    // Reset drag variables
+    draggedStudent = null;
+    draggedFromRow = null;
+    draggedFromSeat = null;
+
+    // Remove dragging class from all elements
+    document.querySelectorAll('.student-draggable.dragging').forEach(el => {
+        el.classList.remove('dragging');
     });
-
-    // Update the global initialSeating with the new arrangement
-    initialSeating = newInitialSeating;
-    // Save the new arrangement to Firestore, which will then trigger the listener for all clients
-    saveSeating(false); // Do not show success message, as listener will trigger sync message
-    draggedStudent = null; // Clear the dragged student state
 }
 
 
-function displaySeating() {
-    const yearInput = document.getElementById('yearInput');
-    const monthInput = document.getElementById('monthInput');
-    const dayInput = document.getElementById('dayInput');
-    const errorMessageElement = document.getElementById('errorMessage');
-    const seatingOutputElement = document.getElementById('seatingOutput');
+// --- Firestore Integration Functions ---
 
-    errorMessageElement.textContent = '';
-    seatingOutputElement.innerHTML = '';
-
-    const year = parseInt(yearInput.value);
-    const month = parseInt(monthInput.value);
-    const day = parseInt(dayInput.value);
-
-    if (isNaN(year) || isNaN(month) || isNaN(day)) {
-        errorMessageElement.textContent = "Please enter valid numbers for year, month, and day.";
-        return;
-    }
-    if (!validMonthJS(month)) {
-        errorMessageElement.textContent = "Invalid month. Please input 1 to 12.";
-        return;
-    }
-    if (!validDayJS(day, month, year)) {
-        errorMessageElement.textContent = `Invalid day ${day} for month ${month} in year ${year}. Please re-enter.`;
-        return;
-    }
-
-    const rotationWeekCount = getRotationWeekFromDateJS(year, month, day);
-
-    if (rotationWeekCount === -1) {
-        errorMessageElement.textContent = "Error: Could not calculate rotation week for the given date. Please check input.";
-        return;
-    }
-
-    // Use the global initialSeating (which is updated by Firestore)
-    rotatedSeatingGlobal = rotateSeatingRowWiseJS(initialSeating, rotationWeekCount);
-
-    let htmlContent = `<h2>Seating for ${month}/${day}/${year} (Rotation Week ${rotationWeekCount}):</h2>`;
-
-    rotatedSeatingGlobal.forEach((row, r_idx) => {
-        htmlContent += `<div class="row-display"><h3>Row ${r_idx + 1}</h3><div class="seats-container">`;
-        row.forEach((seat, s_idx) => {
-            htmlContent += `<div class="seat-item">Seat ${s_idx + 1}: `;
-
-            // Render first student or empty slot
-            if (seat?.[0] !== null) {
-                htmlContent += `<span class="student-draggable" draggable="true" ondragstart="dragStart(event, ${r_idx}, ${s_idx}, 0)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event, ${r_idx}, ${s_idx}, 0)">${seat?.[0]}</span>`;
-            } else {
-                htmlContent += `<span class="student-draggable empty-spot" draggable="true" ondragstart="dragStart(event, ${r_idx}, ${s_idx}, 0)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event, ${r_idx}, ${s_idx}, 0)">Empty</span>`;
-            }
-
-            // Render second student or empty slot if seat is double
-            if (seat?.length === 2) {
-                if (seat?.[1] !== null) {
-                    htmlContent += `, <span class="student-draggable" draggable="true" ondragstart="dragStart(event, ${r_idx}, ${s_idx}, 1)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event, ${r_idx}, ${s_idx}, 1)">${seat?.[1]}</span>`;
-                } else {
-                    htmlContent += `, <span class="student-draggable empty-spot second-empty" draggable="true" ondragstart="dragStart(event, ${r_idx}, ${s_idx}, 1)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event, ${r_idx}, ${s_idx}, 1)">Empty</span>`;
-                }
-            }
-
-            htmlContent += `</div>`;
-        });
-        htmlContent += `</div></div>`;
-    });
-
-    seatingOutputElement.innerHTML = htmlContent;
-}
-
-// --- NEW: saveSeating now writes to Firestore ---
+/**
+ * Saves the current initialSeating array to Firestore.
+ * This is the function that makes data persistent across browsers.
+ * @param {boolean} showSuccessMessage - Whether to display a success message to the user.
+ */
 async function saveSeating(showSuccessMessage = true) {
+    const message = document.getElementById('errorMessage');
     try {
-        // Firestore requires the data to be wrapped in an object
-        await setDoc(seatingDocRef, { seating: initialSeating });
+        // Use set() to overwrite the document with the current initialSeating.
+        // The seating array is stored under a field named 'arrangement'.
+        await db.collection(SEATING_COLLECTION).doc(SEATING_DOCUMENT).set({
+            arrangement: initialSeating
+        });
+
         if (showSuccessMessage) {
-            const message = document.getElementById('errorMessage');
-            message.textContent = "Seating arrangement saved to cloud!";
+            message.textContent = "Seating arrangement saved successfully to cloud!";
             message.className = 'success-message';
             setTimeout(() => {
                 message.textContent = '';
-                message.className = 'error-message'; // Reset to default class
+                message.className = 'error-message'; // Reset class
             }, 3000);
         }
     } catch (e) {
-        const message = document.getElementById('errorMessage');
-        message.textContent = "Error saving arrangement to cloud: " + e.message;
+        console.error("Error saving seating arrangement to Firestore: ", e);
+        message.textContent = "Error saving seating arrangement. Please check console for details.";
         message.className = 'error-message';
     }
 }
 
-// --- loadSeating is now handled by Firestore listener, no longer needed directly ---
-// This function can be removed as setupFirestoreListener handles initial load and updates.
-// Keeping it as a placeholder might confuse if you expect it to load local storage.
-function loadSeating() {
-    // This function's previous role of loading from localStorage is now handled by setupFirestoreListener
-    // which listens for real-time updates from Firestore.
-    // It's no longer necessary for data loading.
-    return false;
+/**
+ * Loads the saved seating arrangement from Firestore.
+ * If no saved data is found, it uses the hardcoded default and saves it to Firestore.
+ * @returns {boolean} True if data was loaded from Firestore, false otherwise (e.g., used default or error).
+ */
+async function loadSeating() {
+    const message = document.getElementById('errorMessage');
+    // Define the default seating arrangement here, as it's the fallback.
+    const hardcodedDefaultSeating = [
+        [["Riddhima", "Samishtha"], ["Yashika", "Harshi"], ["Aditri", "Nitika"], ["Tanushka", "Nivedita"], ["Anaisha", "Ishani"], ["Avika", "Ayesha"]],
+        [["Aadya", "Anushree"], ["Yashasvi", "Tanishee"], ["Sanskriti", "Samriddhi"], ["Vedant", "Saad"], ["Abhiraj", "Vipul"], ["Shaurya", "Siddhart"]],
+        [["Dev", null], ["Avyukta", "Raunak"], ["Raghav", "Anish"], ["Satvik", "Hemansh"], ["Atharva", "Kunal"], ["Himank", "Naitik"]],
+        [["Aryaman", null], ["Hammad", null], ["Affan", null], ["Aadhyan", "Aarav"], ["Svakksh", "Tanay"], ["Prakhyat", "Kartik"]]
+    ];
+
+    try {
+        const docRef = db.collection(SEATING_COLLECTION).doc(SEATING_DOCUMENT);
+        const doc = await docRef.get(); // Attempt to get the document from Firestore
+
+        if (doc.exists && doc.data().arrangement) {
+            // Data found in Firestore, load it
+            initialSeating = doc.data().arrangement;
+            message.textContent = "Saved seating arrangement loaded from cloud.";
+            message.className = 'info-message';
+            setTimeout(() => {
+                message.textContent = '';
+                message.className = 'error-message'; // Reset class
+            }, 3000);
+            return true; // Indicate success
+        } else {
+            // No data found in Firestore document, use the hardcoded default
+            console.log("No saved seating found in Firestore, using default and saving it to Firestore.");
+            message.textContent = "No saved seating found, using default arrangement.";
+            message.className = 'info-message';
+            setTimeout(() => {
+                message.textContent = '';
+                message.className = 'error-message'; // Reset class
+            }, 3000);
+
+            // Set initialSeating to the hardcoded default
+            initialSeating = JSON.parse(JSON.stringify(hardcodedDefaultSeating)); // Deep copy
+
+            // Save this default to Firestore so it's initialized for next time
+            await saveSeating(false); // Save without showing a redundant success message
+            return false; // Indicate that no data was found
+        }
+    } catch (e) {
+        // Error occurred during Firestore operation (e.g., network issue, permission error)
+        console.error("Error loading seating arrangement from Firestore: ", e);
+        message.textContent = "Error loading saved seating arrangement. Using default.";
+        message.className = 'error-message';
+        // Fallback to default if there's a Firebase error
+        initialSeating = JSON.parse(JSON.stringify(hardcodedDefaultSeating)); // Deep copy
+        return false; // Indicate error
+    }
 }
 
-// --- NEW: resetSeatingToDefault now writes to Firestore ---
+/**
+ * Resets the seating arrangement to its original, hardcoded default and updates Firestore.
+ */
 async function resetSeatingToDefault() {
-    const confirmation = confirm("Are you sure you want to reset the seating arrangement to its original, default state? This will affect all users and cannot be undone.");
+    const confirmation = confirm("Are you sure you want to reset the seating arrangement to its original, default state? This cannot be undone.");
+    const message = document.getElementById('errorMessage');
 
     if (confirmation) {
-        const defaultSeatingData = [
+        const defaultSeating = [
             [["Riddhima", "Samishtha"], ["Yashika", "Harshi"], ["Aditri", "Nitika"], ["Tanushka", "Nivedita"], ["Anaisha", "Ishani"], ["Avika", "Ayesha"]],
             [["Aadya", "Anushree"], ["Yashasvi", "Tanishee"], ["Sanskriti", "Samriddhi"], ["Vedant", "Saad"], ["Abhiraj", "Vipul"], ["Shaurya", "Siddhart"]],
             [["Dev", null], ["Avyukta", "Raunak"], ["Raghav", "Anish"], ["Satvik", "Hemansh"], ["Atharva", "Kunal"], ["Himank", "Naitik"]],
             [["Aryaman", null], ["Hammad", null], ["Affan", null], ["Aadhyan", "Aarav"], ["Svakksh", "Tanay"], ["Prakhyat", "Kartik"]]
         ];
+        initialSeating = JSON.parse(JSON.stringify(defaultSeating)); // Ensure a deep copy to truly reset
 
         try {
-            // Write the default data to Firestore
-            await setDoc(seatingDocRef, { seating: defaultSeatingData });
-            // The onSnapshot listener will pick this up and update initialSeating and display
-            const message = document.getElementById('errorMessage');
-            message.textContent = "Seating arrangement reset to default (cloud updated).";
+            // Overwrite the Firestore document with the default seating
+            await db.collection(SEATING_COLLECTION).doc(SEATING_DOCUMENT).set({
+                arrangement: initialSeating
+            });
+            // Also remove the old localStorage item if it exists (for clean up)
+            localStorage.removeItem('savedSeating');
+
+            message.textContent = "Seating arrangement reset to default and saved to cloud.";
             message.className = 'warning-message';
             setTimeout(() => {
                 message.textContent = '';
-                message.className = 'error-message'; // Reset to default class
+                message.className = 'error-message'; // Reset class
             }, 3000);
-            // No need to call displaySeating() here, as the listener will handle it.
+            displaySeating(); // Re-display the seating with the newly reset data
         } catch (e) {
-            const message = document.getElementById('errorMessage');
-            message.textContent = "Error resetting arrangement: " + e.message;
+            console.error("Error resetting seating to default in Firestore: ", e);
+            message.textContent = "Error resetting seating arrangement to default. Please try again.";
             message.className = 'error-message';
         }
+
     } else {
         // User cancelled the reset
-        const message = document.getElementById('errorMessage');
         message.textContent = "Reset cancelled.";
         message.className = 'info-message';
         setTimeout(() => {
             message.textContent = '';
-            message.className = 'error-message'; // Reset to default class
+            message.className = 'error-message'; // Reset class
         }, 2000);
     }
 }
 
-// Corrected window.onload to properly handle login state and avoid infinite loop
+// --- Window Load Logic ---
 window.onload = function() {
     const loginOverlay = document.getElementById('loginOverlay');
     const mainContainer = document.querySelector('.container');
@@ -371,7 +453,7 @@ window.onload = function() {
         // Session is active and not expired
         loginOverlay.style.display = 'none'; // Hide login overlay
         mainContainer.style.display = 'block'; // Show main content
-        initializeSeatingApp(); // Initialize the app (includes Firebase listener setup)
+        initializeSeatingApp(); // Initialize the app by loading data from Firestore
     } else {
         // Not logged in, or session expired.
         // Clean up localStorage if it was an expired session.
