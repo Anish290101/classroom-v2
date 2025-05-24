@@ -375,8 +375,10 @@ h1 {
 
 /* Drag and Drop Visual Feedback */
 .student-draggable.dragging {
-    opacity: 0.5;
-    border: 2px dashed #007bff;
+    opacity: 0.7;
+    border: 1px blue dotted; /* Highlight the name itself */
+    background-color: #f0f8ff; /* Optional: Slightly different background */
+    padding: 4px 9px; /* Adjust padding to fit the dotted border */
 }
 
 .seat-item.drag-over {
