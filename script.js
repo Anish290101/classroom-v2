@@ -50,6 +50,7 @@ function checkLogin() {
         initializeSeatingApp();
     } else {
         loginErrorMessage.textContent = "Invalid User ID or Password.";
+        loginErrorMessage.classList.add('show'); // Show the message
     }
 }
 
@@ -63,13 +64,26 @@ function logout() {
     }
 }
 
+// --- Message Display Helper ---
+function showMessage(message, type = 'info', timeout = 3000) {
+    const messageElement = document.getElementById('errorMessage');
+    messageElement.textContent = message;
+    messageElement.className = `message ${type}-message show`; // Apply base and type classes
+
+    setTimeout(() => {
+        messageElement.classList.remove('show'); // Hide message
+        messageElement.textContent = ''; // Clear text
+    }, timeout);
+}
+
 // --- Initialize App Function (called after successful login or on page load if already logged in) ---
 async function initializeSeatingApp() {
-    // Set current date inputs
+    // Set current date input
     const today = new Date();
-    document.getElementById('yearInput').value = today.getFullYear();
-    document.getElementById('monthInput').value = today.getMonth() + 1;
-    document.getElementById('dayInput').value = today.getDate();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    document.getElementById('dateInput').value = `${year}-${month}-${day}`;
 
     // Load the seating arrangement from Firestore FIRST
     await loadSeating();
@@ -124,32 +138,27 @@ function rotateSeatingRowWiseJS(seatingArrangement, rotations) {
 
 // --- Display Seating Function ---
 function displaySeating() {
-    const year = parseInt(document.getElementById('yearInput').value);
-    const month = parseInt(document.getElementById('monthInput').value);
-    const day = parseInt(document.getElementById('dayInput').value);
+    const dateInput = document.getElementById('dateInput').value; // Get value from date input
     const errorMessage = document.getElementById('errorMessage');
     const seatingOutput = document.getElementById('seatingOutput');
 
-    if (isNaN(year) || isNaN(month) || isNaN(day) ||
-        year < 2024 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31) {
-        errorMessage.textContent = "Please enter a valid date between 2024 and 2099.";
-        errorMessage.className = 'error-message';
+    if (!dateInput) {
+        showMessage("Please select a valid date.", "error");
         seatingOutput.innerHTML = '';
         return;
     }
+
+    const [year, month, day] = dateInput.split('-').map(Number);
 
     const testDate = new Date(year, month - 1, day);
     if (testDate.getFullYear() !== year || testDate.getMonth() !== month - 1 || testDate.getDate() !== day) {
-        errorMessage.textContent = "Invalid date for the selected month.";
-        errorMessage.className = 'error-message';
+        showMessage("Invalid date for the selected month.", "error");
         seatingOutput.innerHTML = '';
         return;
     }
 
-    errorMessage.textContent = '';
-
     const rotationWeek = getRotationWeekFromDateJS(year, month, day);
-    const displayArrangement = JSON.parse(JSON.stringify(initialSeating));
+    const displayArrangement = JSON.parse(JSON.stringify(initialSeating)); // Deep copy
     const rotatedSeating = rotateSeatingRowWiseJS(displayArrangement, rotationWeek);
 
     let html = '';
@@ -160,7 +169,7 @@ function displaySeating() {
         html += `<div class="seating-row">`;
         row.forEach((seat, seatIndex) => {
             html += `<div class="seat-item" data-row="${rowIndex}" data-seat="${seatIndex}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event)">`;
-            seat.forEach((student, studentInSeatIndex) => { // Added studentInSeatIndex
+            seat.forEach((student, studentInSeatIndex) => {
                 if (student) {
                     html += `<div class="student-draggable" draggable="true" ondragstart="dragStart(event)" data-student-index="${studentInSeatIndex}">${student}</div>`;
                 } else {
@@ -186,6 +195,7 @@ let draggedStudentData = {
 
 function dragStart(event) {
     const studentElement = event.target;
+    // Store the actual student name or 'null' if it's an empty spot
     draggedStudentData.name = studentElement.classList.contains('empty-spot') ? null : studentElement.textContent;
 
     const parentSeatItem = studentElement.closest('.seat-item');
@@ -193,12 +203,12 @@ function dragStart(event) {
     draggedStudentData.fromSeat = parseInt(parentSeatItem.dataset.seat);
     draggedStudentData.fromStudentIndexInSeat = parseInt(studentElement.dataset.studentIndex);
 
-    event.dataTransfer.setData("text/plain", draggedStudentData.name || "Empty");
+    event.dataTransfer.setData("text/plain", draggedStudentData.name || "Empty"); // Set data for Firefox compatibility
     studentElement.classList.add('dragging');
 }
 
 function dragOver(event) {
-    event.preventDefault();
+    event.preventDefault(); // Crucial to allow dropping
     const targetElement = event.target.closest('.seat-item');
     if (targetElement) {
         targetElement.classList.add('drag-over');
@@ -217,69 +227,76 @@ function drop(event) {
     document.querySelectorAll('.seat-item.drag-over').forEach(el => el.classList.remove('drag-over'));
 
     const droppedOnElement = event.target.closest('.student-draggable, .seat-item');
-    if (!droppedOnElement) return;
-
-    let droppedOnRow, droppedOnSeat, droppedOnStudentIndexInSeat = null;
-
-    if (droppedOnElement.classList.contains('student-draggable')) {
-        // Dropped directly on a student
-        const parentSeatItem = droppedOnElement.closest('.seat-item');
-        droppedOnRow = parseInt(parentSeatItem.dataset.row);
-        droppedOnSeat = parseInt(parentSeatItem.dataset.seat);
-        droppedOnStudentIndexInSeat = parseInt(droppedOnElement.dataset.studentIndex);
-    } else if (droppedOnElement.classList.contains('seat-item')) {
-        // Dropped on an empty part of a seat-item
-        droppedOnRow = parseInt(droppedOnElement.dataset.row);
-        droppedOnSeat = parseInt(droppedOnElement.dataset.seat);
-        // Find the first null or 0 index if seat is empty
-        const targetSeatArray = initialSeating[droppedOnRow][droppedOnSeat];
-        droppedOnStudentIndexInSeat = targetSeatArray.indexOf(null);
-        if (droppedOnStudentIndexInSeat === -1 && targetSeatArray.length < 2) {
-            droppedOnStudentIndexInSeat = targetSeatArray.length; // Add to end if space
-        } else if (droppedOnStudentIndexInSeat === -1) {
-             // If seat is full and no null, target the first spot for swap
-             droppedOnStudentIndexInSeat = 0;
-        }
-    }
-
-
-    if (draggedStudentData.fromRow === null || draggedStudentData.fromSeat === null ||
-        (draggedStudentData.fromRow === droppedOnRow && draggedStudentData.fromSeat === droppedOnSeat &&
-         draggedStudentData.fromStudentIndexInSeat === droppedOnStudentIndexInSeat)) {
+    if (!droppedOnElement) {
         document.querySelectorAll('.student-draggable.dragging').forEach(el => el.classList.remove('dragging'));
         return;
     }
 
-    const sourceSeatArray = initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat];
+    let droppedOnRow, droppedOnSeat;
+    let targetIndexInSeat = -1; // Index within the target seat where the student will go
+
+    const parentSeatItem = droppedOnElement.closest('.seat-item');
+    droppedOnRow = parseInt(parentSeatItem.dataset.row);
+    droppedOnSeat = parseInt(parentSeatItem.dataset.seat);
+
     const targetSeatArray = initialSeating[droppedOnRow][droppedOnSeat];
 
-    const tempDraggedStudent = draggedStudentData.name;
-    const tempTargetStudent = targetSeatArray[droppedOnStudentIndexInSeat];
-
-    // Handle swap
-    initialSeating[droppedOnRow][droppedOnSeat][droppedOnStudentIndexInSeat] = tempDraggedStudent;
-    sourceSeatArray[draggedStudentData.fromStudentIndexInSeat] = tempTargetStudent;
-
-    // Clean up nulls and ensure structure (e.g., student, null instead of null, student)
-    initialSeating[dragagedStudentData.fromRow][draggedStudentData.fromSeat] = initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat].filter(s => s !== null);
-    while(initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat].length < 2) {
-        initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat].push(null);
+    if (droppedOnElement.classList.contains('student-draggable')) {
+        // Dropped directly onto an existing student element (or an empty-spot div)
+        targetIndexInSeat = parseInt(droppedOnElement.dataset.studentIndex);
+    } else {
+        // Dropped onto an empty part of a seat-item (not directly on a student-draggable)
+        // Find the first available (null) slot in the target seat.
+        targetIndexInSeat = targetSeatArray.indexOf(null);
+        if (targetIndexInSeat === -1 && targetSeatArray.length < 2) {
+            // If no nulls but less than 2 students (e.g., ["Student"]), add to end
+            targetIndexInSeat = targetSeatArray.length;
+        } else if (targetIndexInSeat === -1 && targetSeatArray.length === 2) {
+            // If seat is full with two students (no nulls), default to swapping with the first student.
+            targetIndexInSeat = 0;
+        }
     }
 
-    initialSeating[droppedOnRow][droppedOnSeat] = initialSeating[droppedOnRow][droppedOnSeat].filter(s => s !== null);
-    while(initialSeating[droppedOnRow][droppedOnSeat].length < 2) {
-        initialSeating[droppedOnRow][droppedOnSeat].push(null);
+    // Guard against dropping on the same exact spot
+    if (draggedStudentData.fromRow === droppedOnRow &&
+        draggedStudentData.fromSeat === droppedOnSeat &&
+        draggedStudentData.fromStudentIndexInSeat === targetIndexInSeat) {
+        document.querySelectorAll('.student-draggable.dragging').forEach(el => el.classList.remove('dragging'));
+        return;
     }
 
+    // Get the actual student name (or null for empty spot) from the source
+    const studentToMove = initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat][draggedStudentData.fromStudentIndexInSeat];
+
+    // Get the actual content of the target slot before modifying
+    const studentAtTarget = initialSeating[droppedOnRow][droppedOnSeat][targetIndexInSeat];
+
+    // Perform the swap/move in the initialSeating array
+    initialSeating[droppedOnRow][droppedOnSeat][targetIndexInSeat] = studentToMove;
+    initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat][draggedStudentData.fromStudentIndexInSeat] = studentAtTarget;
+
+    // After the swap, ensure array integrity (exactly 2 elements, with nulls at the end)
+    function normalizeSeatArray(seatArr) {
+        let filtered = seatArr.filter(s => s !== null);
+        while (filtered.length < 2) {
+            filtered.push(null);
+        }
+        return filtered.slice(0, 2); // Ensure it doesn't exceed 2 elements if somehow it did
+    }
+
+    initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat] = normalizeSeatArray(initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat]);
+    initialSeating[droppedOnRow][droppedOnSeat] = normalizeSeatArray(initialSeating[droppedOnRow][droppedOnSeat]);
+
+    // Re-render the seating chart with the updated initialSeating
     displaySeating();
 
+    // Reset dragged data and remove dragging class
     draggedStudentData = {
         name: null,
         fromRow: null,
         fromSeat: null,
         fromStudentIndexInSeat: null
     };
-
     document.querySelectorAll('.student-draggable.dragging').forEach(el => {
         el.classList.remove('dragging');
     });
@@ -287,31 +304,20 @@ function drop(event) {
 
 
 // --- Firestore Integration Functions ---
-async function saveSeating(showSuccessMessage = true) {
-    const message = document.getElementById('errorMessage');
+async function saveSeating() {
     try {
         const seatingJson = JSON.stringify(initialSeating);
         await db.collection(SEATING_COLLECTION).doc(SEATING_DOCUMENT).set({
             arrangement: seatingJson
         });
-
-        if (showSuccessMessage) {
-            message.textContent = "Seating arrangement saved successfully to cloud!";
-            message.className = 'success-message';
-            setTimeout(() => {
-                message.textContent = '';
-                message.className = 'error-message';
-            }, 3000);
-        }
+        showMessage("Seating arrangement saved successfully to cloud!", "success");
     } catch (e) {
         console.error("Error saving seating arrangement to Firestore: ", e);
-        message.textContent = "Error saving seating arrangement. Please check console for details.";
-        message.className = 'error-message';
+        showMessage("Error saving seating arrangement. Please check console for details.", "error");
     }
 }
 
 async function loadSeating() {
-    const message = document.getElementById('errorMessage');
     const hardcodedDefaultSeating = [
         [["Riddhima", "Samishtha"], ["Yashika", "Harshi"], ["Aditri", "Nitika"], ["Tanushka", "Nivedita"], ["Anaisha", "Ishani"], ["Avika", "Ayesha"]],
         [["Aadya", "Anushree"], ["Yashasvi", "Tanishee"], ["Sanskriti", "Samriddhi"], ["Vedant", "Saad"], ["Abhiraj", "Vipul"], ["Shaurya", "Siddhart"]],
@@ -325,30 +331,19 @@ async function loadSeating() {
 
         if (doc.exists && doc.data().arrangement) {
             initialSeating = JSON.parse(doc.data().arrangement);
-            message.textContent = "Saved seating arrangement loaded from cloud.";
-            message.className = 'info-message';
-            setTimeout(() => {
-                message.textContent = '';
-                message.className = 'error-message';
-            }, 3000);
+            showMessage("Saved seating arrangement loaded from cloud.", "info");
             return true;
         } else {
             console.log("No saved seating found in Firestore, using default and saving it to Firestore.");
-            message.textContent = "No saved seating found, using default arrangement.";
-            message.className = 'info-message';
-            setTimeout(() => {
-                message.textContent = '';
-                message.className = 'error-message';
-            }, 3000);
+            showMessage("No saved seating found, using default arrangement.", "info");
 
             initialSeating = JSON.parse(JSON.stringify(hardcodedDefaultSeating));
-            await saveSeating(false);
+            await saveSeating(false); // Save without showing success message
             return false;
         }
     } catch (e) {
         console.error("Error loading seating arrangement from Firestore: ", e);
-        message.textContent = "Error loading saved seating arrangement. Using default.";
-        message.className = 'error-message';
+        showMessage("Error loading saved seating arrangement. Using default.", "error");
         initialSeating = JSON.parse(JSON.stringify(hardcodedDefaultSeating));
         return false;
     }
@@ -356,7 +351,6 @@ async function loadSeating() {
 
 async function resetSeatingToDefault() {
     const confirmation = confirm("Are you sure you want to reset the seating arrangement to its original, default state? This cannot be undone.");
-    const message = document.getElementById('errorMessage');
 
     if (confirmation) {
         const defaultSeating = [
@@ -372,28 +366,15 @@ async function resetSeatingToDefault() {
             await db.collection(SEATING_COLLECTION).doc(SEATING_DOCUMENT).set({
                 arrangement: seatingJson
             });
-            localStorage.removeItem('savedSeating');
-
-            message.textContent = "Seating arrangement reset to default and saved to cloud.";
-            message.className = 'warning-message';
-            setTimeout(() => {
-                message.textContent = '';
-                message.className = 'error-message';
-            }, 3000);
+            showMessage("Seating arrangement reset to default and saved to cloud.", "warning");
             displaySeating();
         } catch (e) {
             console.error("Error resetting seating to default in Firestore: ", e);
-            message.textContent = "Error resetting seating arrangement to default. Please try again.";
-            message.className = 'error-message';
+            showMessage("Error resetting seating arrangement to default. Please try again.", "error");
         }
 
     } else {
-        message.textContent = "Reset cancelled.";
-        message.className = 'info-message';
-        setTimeout(() => {
-            message.textContent = '';
-            message.className = 'error-message';
-        }, 2000);
+        showMessage("Reset cancelled.", "info", 2000);
     }
 }
 
