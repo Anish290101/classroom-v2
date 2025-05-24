@@ -235,31 +235,39 @@ function drop(event) {
     }
 
     let droppedOnRow, droppedOnSeat;
-    let targetIndexInSeat = -1; // Index within the target seat where the student will go
+    let targetIndexInSeat = -1;
 
     const parentSeatItem = droppedOnElement.closest('.seat-item');
     droppedOnRow = parseInt(parentSeatItem.dataset.row);
     droppedOnSeat = parseInt(parentSeatItem.dataset.seat);
 
-    const targetSeatArray = initialSeating[droppedOnRow][droppedOnSeat];
-
+    // Determine the specific slot within the target seat
     if (droppedOnElement.classList.contains('student-draggable')) {
-        // Dropped directly onto an existing student element (or an empty-spot div)
+        // Dropped directly onto an existing student/empty-spot div
         targetIndexInSeat = parseInt(droppedOnElement.dataset.studentIndex);
     } else {
-        // Dropped onto an empty part of a seat-item.
-        // Find the first available (null) slot in the target seat.
-        targetIndexInSeat = targetSeatArray.indexOf(null);
-        if (targetIndexInSeat === -1 && targetSeatArray.length < 2) {
-            // If no nulls but less than 2 students (e.g., ["Student"]), add to end
-            targetIndexInSeat = targetSeatArray.length;
-        } else if (targetIndexInSeat === -1 && targetSeatArray.length === 2) {
-            // If seat is full with two students (no nulls), default to swapping with the first student.
+        // Dropped onto an empty area of the seat-item.
+        // Try to find the first null slot. If no nulls, but less than 2 students, add to the end.
+        const currentTargetSeat = initialSeating[droppedOnRow][droppedOnSeat];
+        const nullIndex = currentTargetSeat.indexOf(null);
+        if (nullIndex !== -1) {
+            targetIndexInSeat = nullIndex;
+        } else if (currentTargetSeat.length < 2) {
+            targetIndexInSeat = currentTargetSeat.length;
+        } else {
+            // Seat is full (2 students) and no nulls, default to replacing the first student (index 0)
             targetIndexInSeat = 0;
         }
     }
 
-    // Guard against dropping on the same exact spot
+
+    // Get the student name being dragged (could be null for an "Empty" slot)
+    const studentToMove = initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat][draggedStudentData.fromStudentIndexInSeat];
+
+    // Get the current content of the target slot (could be a student name or null)
+    const studentAtTarget = initialSeating[droppedOnRow][droppedOnSeat][targetIndexInSeat];
+
+    // Handle same-spot drop (no change needed)
     if (draggedStudentData.fromRow === droppedOnRow &&
         draggedStudentData.fromSeat === droppedOnSeat &&
         draggedStudentData.fromStudentIndexInSeat === targetIndexInSeat) {
@@ -267,27 +275,31 @@ function drop(event) {
         return;
     }
 
-    // Get the actual student name (or null for empty spot) from the source
-    const studentToMove = initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat][draggedStudentData.fromStudentIndexInSeat];
+    // --- Perform the actual move/swap in the initialSeating array ---
 
-    // Get the actual content of the target slot before modifying
-    const studentAtTarget = initialSeating[droppedOnRow][droppedOnSeat][targetIndexInSeat];
-
-    // Perform the swap/move in the initialSeating array
+    // Case 1: Moving a student from a "source" seat to a "target" seat.
+    // Set the target spot to the student being moved.
     initialSeating[droppedOnRow][droppedOnSeat][targetIndexInSeat] = studentToMove;
+
+    // Set the source spot to the student that was at the target (if any, for a swap)
+    // or null (if it was a move to an empty spot, or if the target was null).
     initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat][draggedStudentData.fromStudentIndexInSeat] = studentAtTarget;
 
-    // After the swap, ensure array integrity (exactly 2 elements, with nulls at the end)
+
+    // --- Post-move normalization for source and target seats ---
+    // Ensure each seat array has exactly 2 elements, with nulls at the end
     function normalizeSeatArray(seatArr) {
-        let filtered = seatArr.filter(s => s !== null);
+        let filtered = seatArr.filter(s => s !== null); // Remove all nulls
         while (filtered.length < 2) {
-            filtered.push(null);
+            filtered.push(null); // Add nulls back until it has 2 elements
         }
         return filtered.slice(0, 2); // Ensure it doesn't exceed 2 elements
     }
 
+    // Apply normalization to both the source and target seats
     initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat] = normalizeSeatArray(initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat]);
     initialSeating[droppedOnRow][droppedOnSeat] = normalizeSeatArray(initialSeating[droppedOnRow][droppedOnSeat]);
+
 
     // Re-render the seating chart with the updated initialSeating
     displaySeating();
