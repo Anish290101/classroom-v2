@@ -1,23 +1,27 @@
+/* General Body and Container Styles */
 body {
-    font-family: sans-serif;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     margin: 0;
-    background-color: #f4f4f4;
-    color: #333;
+    background-color: #e0e6ed; /* Lighter, modern background */
+    color: #34495e;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     box-sizing: border-box;
+    padding: 20px;
 }
 
 .container {
-    max-width: 960px;
-    margin: 20px auto;
-    background-color: #fff;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    max-width: 1200px; /* Wider container for better layout */
+    width: 100%;
     display: none; /* Hidden until login */
+    box-sizing: border-box;
+    overflow: hidden; /* Clear floats/margins */
 }
 
 /* --- Login Overlay Styles --- */
@@ -27,7 +31,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(44, 62, 80, 0.9); /* Darker, modern overlay */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -35,139 +39,192 @@ body {
 }
 
 .login-card {
-    background-color: #fff;
-    padding: 40px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    background-color: #ffffff;
+    padding: 50px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
     text-align: center;
-    max-width: 400px;
+    max-width: 450px;
     width: 90%;
+    box-sizing: border-box;
 }
 
 .login-card h2 {
-    color: #333;
-    margin-bottom: 25px;
-    font-size: 1.8em;
+    color: #2c3e50;
+    margin-bottom: 30px;
+    font-size: 2em;
+    font-weight: 600;
 }
 
 .login-form-group {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     text-align: left;
 }
 
 .login-form-group label {
     display: block;
-    margin-bottom: 8px;
-    font-weight: bold;
+    margin-bottom: 10px;
+    font-weight: 500;
     color: #555;
+    font-size: 1.1em;
 }
 
 .login-form-group input[type="text"],
 .login-form-group input[type="password"] {
-    width: calc(100% - 20px);
-    padding: 12px;
-    border: 1px solid #ced4da;
-    border-radius: 6px;
-    font-size: 1em;
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #cdd4da;
+    border-radius: 8px;
+    font-size: 1.1em;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-form-group input[type="text"]:focus,
+.login-form-group input[type="password"]:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    outline: none;
 }
 
 .login-card button {
-    background-color: #007bff;
+    background-color: #3498db;
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.2em;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    width: 100%;
+    box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+}
+
+.login-card button:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+}
+
+.login-card .error-message {
+    color: #e74c3c;
+    margin-top: 20px;
+    font-size: 1em;
+    font-weight: 600;
+}
+
+/* --- General Content Styles --- */
+h1 {
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 2.5em;
+    font-weight: 700;
+}
+
+.subtitle {
+    text-align: center;
+    color: #7f8c8d;
+    margin-bottom: 25px;
+    font-style: italic;
+    font-size: 1.1em;
+}
+
+.note {
+    background-color: #ecf0f1;
+    border-left: 5px solid #3498db;
+    padding: 15px 20px;
+    margin-bottom: 30px;
+    border-radius: 8px;
+    color: #34495e;
+    font-size: 0.95em;
+    line-height: 1.6;
+}
+
+/* --- Layout for Controls and Seating Chart --- */
+.main-content {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap; /* Allows columns to wrap on smaller screens */
+    margin-top: 30px;
+}
+
+.controls-panel {
+    flex: 1; /* Takes equal space */
+    min-width: 300px; /* Minimum width for the panel */
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 25px;
+    box-sizing: border-box;
+}
+
+.seating-display-panel {
+    flex: 2; /* Takes more space than controls */
+    min-width: 500px; /* Minimum width for seating chart */
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 25px;
+    box-sizing: border-box;
+}
+
+/* --- Form Section --- */
+.form-section h3 {
+    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #555;
+    font-size: 1em;
+}
+
+.form-group input[type="number"],
+.form-group input[type="date"] { /* Added date type */
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cdd4da;
+    border-radius: 6px;
+    font-size: 1em;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+}
+.form-group input[type="number"]:focus,
+.form-group input[type="date"]:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    outline: none;
+}
+
+.form-section button {
+    background-color: #2ecc71; /* Green for view */
     color: white;
     padding: 12px 25px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
     font-size: 1.1em;
-    transition: background-color 0.3s ease;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease;
     width: 100%;
-}
-
-.login-card button:hover {
-    background-color: #0056b3;
-}
-
-.login-card .error-message {
-    color: #dc3545;
     margin-top: 15px;
-    font-size: 0.95em;
-    font-weight: bold;
-}
-
-/* --- General Styles for Container --- */
-h1 {
-    color: #007bff;
-    text-align: center;
-    margin-bottom: 10px;
-}
-
-.subtitle {
-    text-align: center;
-    color: #666;
-    margin-bottom: 20px;
-    font-style: italic;
-}
-
-.note {
-    background-color: #e2f0fb;
-    border-left: 5px solid #007bff;
-    padding: 10px 15px;
-    margin-bottom: 25px;
-    border-radius: 5px;
-    color: #333;
-    font-size: 0.9em;
-}
-
-/* --- Form Section --- */
-.form-section {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-bottom: 25px;
-    padding: 15px;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    background-color: #f8f9fa;
-    justify-content: center;
-    align-items: flex-end;
-}
-
-.form-group {
-    flex: 1;
-    min-width: 120px; /* Ensures inputs don't get too small */
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #555;
-    font-size: 0.95em;
-}
-
-.form-group input[type="number"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 5px;
-    font-size: 1em;
-    box-sizing: border-box; /* Include padding and border in element's total width and height */
-}
-
-.form-section button {
-    background-color: #28a745;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.3s ease;
-    align-self: flex-end; /* Aligns button to the bottom of the form section */
+    box-shadow: 0 3px 8px rgba(46, 204, 113, 0.3);
 }
 
 .form-section button:hover {
-    background-color: #218838;
+    background-color: #27ae60;
+    transform: translateY(-2px);
 }
 
 /* --- Action Buttons --- */
@@ -175,267 +232,312 @@ h1 {
     display: flex;
     justify-content: center;
     gap: 15px;
-    margin-bottom: 25px;
-    flex-wrap: wrap; /* Allow buttons to wrap */
+    margin-top: 25px;
+    flex-wrap: wrap;
 }
 
 .action-buttons button, .bottom-action-buttons button {
-    padding: 10px 20px;
+    padding: 12px 20px;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 1em;
+    font-weight: 500;
     transition: background-color 0.3s ease, transform 0.2s ease;
     flex-grow: 1;
-    max-width: 200px;
+    max-width: 220px; /* Adjusted max-width */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .action-buttons button:hover, .bottom-action-buttons button:hover {
     transform: translateY(-2px);
 }
 
-.action-buttons button:nth-child(1) { /* Save Arrangement */
-    background-color: #17a2b8;
+.action-buttons .save-btn { /* Save Arrangement */
+    background-color: #3498db; /* Blue for save */
     color: white;
 }
 
-.action-buttons button:nth-child(1):hover {
-    background-color: #138496;
+.action-buttons .save-btn:hover {
+    background-color: #2980b9;
 }
 
-.action-buttons button:nth-child(2) { /* Logout */
-    background-color: #dc3545;
+.action-buttons .logout-btn { /* Logout */
+    background-color: #e74c3c; /* Red for logout */
     color: white;
 }
 
-.action-buttons button:nth-child(2):hover {
-    background-color: #c82333;
+.action-buttons .logout-btn:hover {
+    background-color: #c0392b;
 }
 
-.bottom-action-buttons button { /* Reset to Original */
-    background-color: #ffc107;
-    color: #343a40;
+.bottom-action-buttons .reset-btn { /* Reset to Original */
+    background-color: #f39c12; /* Orange for reset */
+    color: white;
 }
 
-.bottom-action-buttons button:hover {
-    background-color: #e0a800;
+.bottom-action-buttons .reset-btn:hover {
+    background-color: #e67e22;
 }
 
 
 /* --- Messages --- */
-.error-message {
-    color: #dc3545;
+.message { /* Consolidated message styles */
     text-align: center;
-    margin-bottom: 15px;
-    font-weight: bold;
+    margin-top: 20px;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-weight: 600;
     font-size: 0.95em;
+    opacity: 0; /* Hidden by default */
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.success-message {
-    color: #28a745;
-    text-align: center;
-    margin-bottom: 15px;
-    font-weight: bold;
-    font-size: 0.95em;
+.message.show {
+    opacity: 1;
+    transform: translateY(0);
 }
 
-.info-message {
-    color: #17a2b8;
-    text-align: center;
-    margin-bottom: 15px;
-    font-weight: bold;
-    font-size: 0.95em;
+.message.error-message {
+    background-color: #ffe6e6;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
 }
 
-.warning-message {
-    color: #ffc107;
-    text-align: center;
-    margin-bottom: 15px;
-    font-weight: bold;
-    font-size: 0.95em;
+.message.success-message {
+    background-color: #e6ffe6;
+    color: #2ecc71;
+    border: 1px solid #2ecc71;
+}
+
+.message.info-message {
+    background-color: #e6f7ff;
+    color: #3498db;
+    border: 1px solid #3498db;
+}
+
+.message.warning-message {
+    background-color: #fff8e6;
+    color: #f39c12;
+    border: 1px solid #f39c12;
 }
 
 
 /* --- Instructions Section --- */
 .instructions {
-    background-color: #f0f8ff;
-    border: 1px solid #add8e6;
+    background-color: #ecf0f1;
+    border: 1px solid #bdc3c7;
     padding: 20px;
     border-radius: 8px;
-    margin-bottom: 30px;
+    margin-top: 30px;
+    line-height: 1.6;
 }
 
 .instructions h2 {
-    color: #0056b3;
+    color: #2c3e50;
     margin-top: 0;
     margin-bottom: 15px;
     text-align: center;
+    font-size: 1.6em;
+    font-weight: 600;
 }
 
 .instructions ol {
     list-style-type: decimal;
     padding-left: 25px;
-    line-height: 1.6;
+    margin: 0;
 }
 
 .instructions ol li {
     margin-bottom: 8px;
-    color: #333;
+    color: #34495e;
 }
 
 
 /* --- Seating Chart Layout --- */
 .seating-chart {
     display: flex;
-    flex-direction: column; /* Stacks rows vertically */
-    gap: 20px; /* Space between rows */
-    margin-top: 30px;
-    border: 1px solid #ddd;
-    padding: 15px;
-    border-radius: 8px;
-    background-color: #f9f9f9;
+    flex-direction: column;
+    gap: 25px; /* Space between rows */
+    margin-top: 20px;
+    /* Removed panel specific border/shadow as it's now within seating-display-panel */
 }
 
 .seating-row-wrapper {
     display: flex;
-    align-items: center; /* Vertically align row number with seating row */
-    gap: 15px; /* Space between row number and the actual seating row */
+    align-items: center;
+    gap: 20px; /* Space between row number and seating row */
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.08);
 }
 
 .row-number {
-    font-weight: bold;
-    font-size: 1.1em;
-    color: #555;
-    background-color: #e2e6ea;
-    padding: 8px 12px;
-    border-radius: 5px;
-    min-width: 80px; /* Ensure consistent width for row numbers */
+    font-weight: 700;
+    font-size: 1.2em;
+    color: #34495e;
+    background-color: #dfe6ee; /* Lighter background for row number */
+    padding: 10px 15px;
+    border-radius: 8px;
+    min-width: 90px;
     text-align: center;
-    flex-shrink: 0; /* Prevent it from shrinking */
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .seating-row {
     display: flex;
-    flex-wrap: wrap; /* Allows seats to wrap to next line if screen is too narrow */
+    flex-wrap: wrap;
     gap: 15px; /* Space between seat items */
-    flex-grow: 1; /* Allow the seating row to take up available space */
+    flex-grow: 1;
     padding: 10px;
-    background-color: #fff;
-    border-radius: 5px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border-radius: 8px;
+    /* Removed direct background/shadow as it's now on row-wrapper */
 }
 
 .seat-item {
-    border: 1px solid #ced4da;
-    border-radius: 8px;
-    padding: 10px;
-    background-color: #e9ecef;
+    border: 1px solid #cdd4da;
+    border-radius: 10px;
+    padding: 12px;
+    background-color: #ecf0f1; /* Light gray for seats */
     display: flex;
-    flex-direction: column; /* Stack students vertically within a seat */
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-width: 120px; /* Minimum width for a seat */
-    min-height: 80px; /* Minimum height for a seat */
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    min-width: 140px; /* Increased min-width for better spacing */
+    min-height: 90px; /* Increased min-height */
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.1);
     transition: all 0.2s ease-in-out;
-    cursor: pointer; /* Indicates it's interactive */
-    position: relative; /* For student draggable positioning */
-    box-sizing: border-box; /* Include padding and border in element's total width and height */
-    text-align: center; /* Center "Empty" text */
-    overflow: hidden; /* Hide overflow if names are too long */
+    cursor: default; /* Changed to default, student is draggable */
+    position: relative;
+    box-sizing: border-box;
+    text-align: center;
 }
 
 .student-draggable {
-    display: inline-block;
-    padding: 5px 10px;
-    background-color: #007bff;
+    display: inline-flex; /* Use inline-flex for better centering */
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    background-color: #3498db; /* Blue for students */
     color: white;
-    border-radius: 4px;
-    cursor: grab; /* Indicates draggable */
-    margin: 3px 0; /* Add a small vertical margin for stacked names */
-    font-weight: normal;
-    white-space: nowrap; /* Prevent names from wrapping */
-    transition: background-color 0.2s ease, transform 0.2s ease;
-    max-width: 100%; /* Ensure it doesn't overflow parent */
+    border-radius: 6px;
+    cursor: grab;
+    margin: 4px 0; /* Vertical margin for stacked names */
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    max-width: 100%;
     box-sizing: border-box;
-    text-overflow: ellipsis; /* Add ellipsis if text is too long */
+    text-overflow: ellipsis;
     overflow: hidden;
+    line-height: 1.2; /* Tighter line height */
 }
 
 .student-draggable:active {
-    cursor: grabbing; /* Feedback when dragging */
+    cursor: grabbing;
+    transform: scale(0.98);
 }
 
 .student-draggable.empty-spot {
-    background-color: #6c757d;
+    background-color: #95a5a6; /* Gray for empty spots */
     color: white;
     font-style: italic;
     cursor: grab;
+    border: none; /* Ensure no extra border */
 }
 
-/* Drag and Drop Visual Feedback */
+/* Drag and Drop Visual Feedback - FIXED */
 .student-draggable.dragging {
-    opacity: 0.7;
-    border: 1px blue dotted; /* Highlight the name itself */
-    background-color: #f0f8ff; /* Optional: Slightly different background */
-    padding: 4px 9px; /* Adjust padding to fit the dotted border */
+    opacity: 0.8; /* Slightly less opaque */
+    border: 2px dotted #3498db; /* Blue dotted border on the student name */
+    background-color: #eaf5ff; /* Lighter background for the dragged item */
+    color: #34495e; /* Change text color for contrast */
+    transform: scale(1.02); /* Slightly grow to indicate active drag */
+    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3); /* Add shadow */
+    cursor: grabbing;
 }
 
 .seat-item.drag-over {
-    border: 2px dashed #007bff;
-    background-color: #eaf5ff;
+    border: 2px solid #2ecc71; /* Solid green border on the target seat */
+    background-color: #e6ffe6; /* Light green background for target seat */
+    box-shadow: 0 0 0 4px rgba(46, 204, 113, 0.2); /* Outer glow */
+    transform: scale(1.01);
 }
 
 /* --- Responsive Design --- */
-@media (max-width: 768px) {
-    .container {
-        margin: 10px;
-        padding: 20px;
-    }
-
-    .form-section {
+@media (max-width: 992px) {
+    .main-content {
         flex-direction: column;
-        align-items: stretch;
+        gap: 20px;
     }
 
-    .form-group {
-        width: 100%;
+    .controls-panel, .seating-display-panel {
         min-width: unset;
+        width: 100%;
     }
 
-    .form-section button {
-        width: 100%;
-        align-self: center;
+    .container {
+        padding: 25px;
+    }
+
+    .login-card {
+        padding: 30px;
+    }
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 2em;
+    }
+
+    .login-card h2 {
+        font-size: 1.5em;
     }
 
     .action-buttons button, .bottom-action-buttons button {
-        max-width: unset;
         width: 100%;
+        max-width: unset;
     }
 
     .seating-row-wrapper {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
+        padding: 10px;
     }
 
     .row-number {
         width: 100%;
         text-align: left;
         min-width: unset;
+        padding: 8px 12px;
     }
 
     .seating-row {
-        justify-content: center; /* Center seats on smaller screens */
+        justify-content: center;
+        gap: 10px;
+        padding: 5px;
     }
 
     .seat-item {
-        min-width: 100px; /* Adjust min width for seats on smaller screens */
-        padding: 8px;
+        min-width: 100px;
+        min-height: 80px;
+        padding: 10px;
     }
 
     .student-draggable {
-        padding: 4px 8px;
+        padding: 5px 10px;
         font-size: 0.9em;
     }
 }
