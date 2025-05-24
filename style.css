@@ -32,7 +32,7 @@ body {
     display: flex; /* Use flexbox to center the card */
     justify-content: center;
     align-items: center;
-    z-index: 1000; /* Ensure it's on top of everything */
+    z-index: 1000; /* Ensure it's on top */
 }
 
 .login-card {
@@ -41,53 +41,40 @@ body {
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     text-align: center;
+    width: 100%;
     max-width: 400px;
-    width: 90%;
+    margin: 20px;
 }
 
 .login-card h2 {
-    margin-top: 0;
     color: #007bff;
+    margin-bottom: 25px;
+    font-size: 1.8em;
 }
 
 .login-form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     text-align: left;
 }
 
 .login-form-group label {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     font-weight: bold;
     color: #555;
 }
 
 .login-form-group input[type="text"],
 .login-form-group input[type="password"] {
-    width: calc(100% - 22px); /* Account for padding */
-    padding: 10px;
+    width: calc(100% - 20px); /* Adjust for padding */
+    padding: 12px;
     border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 16px;
-}
-
-.login-card button {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    border: none;
     border-radius: 5px;
-    cursor: pointer;
     font-size: 1em;
-    margin-top: 10px;
-    transition: background-color 0.3s ease;
+    box-sizing: border-box; /* Include padding in width */
 }
 
-.login-card button:hover {
-    background-color: #0056b3;
-}
-
-/* --- General Styles --- */
+/* --- General Styles for Container Content --- */
 h1 {
     color: #007bff;
     text-align: center;
@@ -96,148 +83,151 @@ h1 {
 
 .subtitle {
     text-align: center;
-    color: #555;
+    color: #666;
     margin-bottom: 20px;
+    font-size: 1.1em;
 }
 
 .note {
     background-color: #e2f0ff;
     border-left: 5px solid #007bff;
     padding: 10px 15px;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     border-radius: 4px;
-    color: #0056b3;
+    color: #333;
+    font-style: italic;
 }
 
 .form-section {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
     gap: 15px;
-    justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
+    padding: 15px;
+    background-color: #f0f8ff;
+    border-radius: 6px;
+    border: 1px solid #cce5ff;
+    justify-content: center; /* Center form elements */
+    align-items: flex-end; /* Align inputs/labels nicely */
 }
 
 .form-group {
-    flex: 1;
-    min-width: 120px;
-    text-align: center;
+    flex: 1; /* Allow groups to grow */
+    min-width: 150px; /* Minimum width for each input group */
 }
 
 .form-group label {
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
+    color: #555;
 }
 
 .form-group input[type="number"] {
-    width: calc(100% - 22px); /* Account for padding and border */
+    width: calc(100% - 20px); /* Adjust for padding */
     padding: 10px;
     border: 1px solid #ced4da;
     border-radius: 4px;
-    font-size: 16px;
-    text-align: center;
+    font-size: 1em;
+    box-sizing: border-box; /* Include padding in width */
 }
 
-.form-section button, .action-buttons button, .bottom-action-buttons button {
-    background-color: #28a745;
+button {
+    background-color: #007bff;
     color: white;
-    padding: 10px 20px;
+    padding: 12px 25px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     font-size: 1em;
-    transition: background-color 0.3s ease;
-    margin-top: 25px; /* Aligns with input fields */
+    transition: background-color 0.2s ease;
+    margin-top: 10px; /* Space from inputs */
 }
 
-.form-section button:hover, .action-buttons button:hover, .bottom-action-buttons button:hover {
-    background-color: #218838;
+button:hover {
+    background-color: #0056b3;
 }
 
 .action-buttons {
+    text-align: center;
+    margin-bottom: 25px;
     display: flex;
     justify-content: center;
     gap: 15px;
-    margin-bottom: 20px;
-}
-
-.action-buttons button {
-    margin-top: 0; /* Override default margin */
-}
-
-.action-buttons button:last-child { /* Logout button */
-    background-color: #dc3545;
-}
-
-.action-buttons button:last-child:hover {
-    background-color: #c82333;
+    flex-wrap: wrap;
 }
 
 .bottom-action-buttons {
     text-align: center;
     margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
 }
 
-.bottom-action-buttons button {
-    background-color: #ffc107;
-    color: #343a40;
-}
-
-.bottom-action-buttons button:hover {
-    background-color: #e0a800;
-}
-
-
+/* --- Messages --- */
 .error-message {
     color: #dc3545;
     background-color: #f8d7da;
     border: 1px solid #f5c6cb;
-    padding: 8px 15px;
-    border-radius: 4px;
-    margin-top: 10px;
+    padding: 10px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
     text-align: center;
-    display: block; /* Ensure it takes up space even if empty */
-    min-height: 20px; /* Give it some minimum height */
-    box-sizing: border-box;
+    font-weight: bold;
 }
 
 .success-message {
     color: #28a745;
     background-color: #d4edda;
     border: 1px solid #c3e6cb;
-    padding: 8px 15px;
-    border-radius: 4px;
-    margin-top: 10px;
+    padding: 10px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
     text-align: center;
-    min-height: 20px;
-    box-sizing: border-box;
+    font-weight: bold;
 }
 
 .info-message {
     color: #0056b3;
     background-color: #e2f0ff;
-    border: 1px solid #b8daff;
-    padding: 8px 15px;
-    border-radius: 4px;
-    margin-top: 10px;
+    border: 1px solid #cce5ff;
+    padding: 10px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
     text-align: center;
-    min-height: 20px;
-    box-sizing: border-box;
+    font-weight: bold;
+}
+
+.warning-message {
+    color: #ffc107;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    padding: 10px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    text-align: center;
+    font-weight: bold;
 }
 
 
+/* --- Instructions Section --- */
 .instructions {
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 20px;
+    background-color: #e9ecef;
+    padding: 15px 20px;
+    border-radius: 6px;
     margin-bottom: 25px;
+    border: 1px solid #dee2e6;
 }
 
 .instructions h2 {
-    color: #007bff;
+    color: #343a40;
     margin-top: 0;
-    font-size: 1.4em;
+    margin-bottom: 10px;
+    font-size: 1.3em;
 }
 
 .instructions ol {
@@ -247,46 +237,67 @@ h1 {
 
 .instructions li {
     margin-bottom: 8px;
-    line-height: 1.4;
     color: #495057;
 }
 
-
-/* --- Seating Chart Styles --- */
+/* --- Seating Chart Display --- */
 .seating-chart {
-    border: 2px solid #ccc;
+    border: 1px solid #dee2e6;
     padding: 15px;
     margin-bottom: 15px;
     border-radius: 6px;
-    background-color: #f0f2f5;
+    background-color: #fdfdfd;
 }
 
+/* New styles for row numbers */
+.seating-row-wrapper {
+    display: flex; /* Use flexbox to align row number and seat items */
+    align-items: flex-start; /* Align to the top */
+    margin-bottom: 15px; /* Space between rows */
+}
+
+.row-number {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #555;
+    background-color: #e9ecef;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-right: 15px; /* Space between row number and the actual seats */
+    min-width: 80px; /* Give it a consistent width */
+    text-align: center;
+    flex-shrink: 0; /* Prevent it from shrinking */
+    align-self: stretch; /* Make it stretch to the height of the row */
+    display: flex;
+    align-items: center; /* Center text vertically */
+    justify-content: center; /* Center text horizontally */
+}
+
+/* Adjust seating-row to be a flex container for seats */
 .seating-row {
     display: flex;
-    flex-wrap: wrap; /* Allow seats to wrap to next line if screen is narrow */
+    flex-wrap: wrap; /* Allow seats to wrap to next line if row is too long */
     gap: 10px; /* Space between seat items */
-    margin-bottom: 15px; /* Space between rows */
-    background-color: #e0e4eb;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #d0d4da;
+    flex-grow: 1; /* Allow it to take up available space */
 }
 
+/* You might need to adjust .seat-item slightly if previous styles conflict */
 .seat-item {
     background-color: #f8f9fa;
     border: 1px solid #ced4da;
     border-radius: 4px;
     padding: 10px 15px;
-    display: flex; /* Use flex to arrange students within a seat */
-    gap: 8px; /* Space between students in a seat */
-    align-items: center;
-    justify-content: center;
-    min-width: 140px; /* Ensures enough width for two names */
-    min-height: 40px; /* Ensures some height even if empty */
+    /* Removed inline-block, now relying on flexbox of .seating-row */
+    min-width: 120px;
     text-align: center;
     font-weight: bold;
     color: #495057;
-    flex-shrink: 0; /* Prevent seats from shrinking too much */
+    display: flex; /* Use flexbox inside seat-item for students */
+    flex-direction: column; /* Stack students vertically */
+    justify-content: center; /* Center students vertically if only one */
+    align-items: center; /* Center students horizontally */
+    gap: 5px; /* Space between student names in a seat */
+    min-height: 50px; /* Ensure enough height for two students + gap */
 }
 
 .student-draggable {
@@ -295,10 +306,11 @@ h1 {
     background-color: #007bff;
     color: white;
     border-radius: 4px;
-    cursor: grab; /* Indicates draggable */
+    cursor: grab;
     margin: 0; /* Remove margin from previous examples */
     font-weight: normal;
-    white-space: nowrap; /* Prevent names from wrapping */
+    white-space: nowrap;
+    width: fit-content; /* Make the student div fit its content */
 }
 
 .student-draggable.empty-spot {
@@ -324,25 +336,26 @@ h1 {
         margin: 10px;
         padding: 20px;
     }
+
     .form-section {
         flex-direction: column;
         align-items: stretch;
     }
-    .form-group {
-        width: 100%;
-        min-width: unset;
-    }
-    .form-section button {
+
+    .form-group input[type="number"],
+    button {
         width: 100%;
         margin-top: 10px;
     }
-    .seating-row {
-        flex-direction: column;
-        align-items: stretch;
+
+    .row-number {
+        margin-right: 10px;
+        min-width: 60px;
+        font-size: 1em;
     }
+
     .seat-item {
-        min-width: unset;
-        width: 100%;
-        box-sizing: border-box; /* Include padding/border in width */
+        min-width: unset; /* Allow smaller width on small screens */
+        flex-grow: 1; /* Allow seats to grow to fill space */
     }
 }
