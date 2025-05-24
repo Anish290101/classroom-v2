@@ -211,21 +211,61 @@ function dragStart(event) {
 
 function dragOver(event) {
     event.preventDefault(); // Crucial to allow dropping
-    const targetElement = event.target.closest('.seat-item');
-    if (targetElement) {
+
+    // Always remove all existing drag-over highlights first
+    document.querySelectorAll('.student-draggable.drag-over').forEach(el => el.classList.remove('drag-over'));
+    document.querySelectorAll('.seat-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+    const targetElement = event.target;
+
+    if (targetElement.classList.contains('student-draggable')) {
+        // If hovering directly over a student-draggable, highlight that specific element
         targetElement.classList.add('drag-over');
+    } else {
+        // If not directly over a student-draggable, check if it's over a seat-item
+        const seatItem = targetElement.closest('.seat-item');
+        if (seatItem) {
+            // Find the correct student-draggable within this seat-item to highlight.
+            // If the seat has an 'empty-spot', highlight it.
+            // Otherwise, if there's only one student, highlight the empty space next to it.
+            // If the seat is full, it implies a swap, so highlight the first student for a default target.
+
+            const targetStudentDraggables = seatItem.querySelectorAll('.student-draggable');
+            let highlighted = false;
+
+            // Prioritize highlighting an existing empty spot
+            for (let i = 0; i < targetStudentDraggables.length; i++) {
+                if (targetStudentDraggables[i].classList.contains('empty-spot')) {
+                    targetStudentDraggables[i].classList.add('drag-over');
+                    highlighted = true;
+                    break;
+                }
+            }
+
+            // If no empty spot, but less than 2 student-draggable elements, highlight the entire seat-item
+            // to indicate a new position will be created.
+            if (!highlighted && targetStudentDraggables.length < 2) {
+                seatItem.classList.add('drag-over'); // Highlight the whole seat if adding a second student
+            } else if (!highlighted && targetStudentDraggables.length === 2) {
+                // If seat is full (2 students) and no empty spots, it implies a swap.
+                // Highlight the first student in the target seat as a default swap target.
+                targetStudentDraggables[0].classList.add('drag-over');
+            }
+        }
     }
 }
 
 function dragLeave(event) {
-    const targetElement = event.target.closest('.seat-item');
-    if (targetElement) {
-        targetElement.classList.remove('drag-over');
-    }
+    // Remove drag-over from all elements when the drag leaves.
+    // This is simpler and more robust than trying to track specific elements on dragLeave.
+    document.querySelectorAll('.student-draggable.drag-over').forEach(el => el.classList.remove('drag-over'));
+    document.querySelectorAll('.seat-item.drag-over').forEach(el => el.classList.remove('drag-over'));
 }
+
 
 function drop(event) {
     event.preventDefault();
+    document.querySelectorAll('.student-draggable.drag-over').forEach(el => el.classList.remove('drag-over'));
     document.querySelectorAll('.seat-item.drag-over').forEach(el => el.classList.remove('drag-over'));
 
     const droppedOnElement = event.target.closest('.student-draggable, .seat-item');
