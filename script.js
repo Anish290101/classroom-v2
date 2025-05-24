@@ -45,6 +45,7 @@ function checkLogin() {
     if (loginId === CORRECT_ID && loginPassword === CORRECT_PASSWORD) {
         localStorage.setItem(LOGIN_STATUS_KEY, 'true');
         localStorage.setItem(LOGIN_TIMESTAMP_KEY, Date.now().toString());
+        loginErrorMessage.classList.remove('show'); // Hide any error
         document.getElementById('loginOverlay').style.display = 'none';
         document.querySelector('.container').style.display = 'block';
         initializeSeatingApp();
@@ -80,10 +81,9 @@ function showMessage(message, type = 'info', timeout = 3000) {
 async function initializeSeatingApp() {
     // Set current date input
     const today = new Date();
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    const day = today.getDate().toString().padStart(2, '0');
-    document.getElementById('dateInput').value = `${year}-${month}-${day}`;
+    document.getElementById('yearInput').value = today.getFullYear();
+    document.getElementById('monthInput').value = today.getMonth() + 1;
+    document.getElementById('dayInput').value = today.getDate();
 
     // Load the seating arrangement from Firestore FIRST
     await loadSeating();
@@ -104,11 +104,11 @@ function getRotationWeekFromDateJS(year, month, day) {
     let effectiveDiffDays = diffDays;
     if (targetDate < startDate) {
         effectiveDiffDays = -diffDays;
-        if (startDayOfWeek !== 1) {
+        if (startDayOfWeek !== 1) { // If start date wasn't a Monday
             effectiveDiffDays -= (startDayOfWeek - 1);
         }
     } else {
-        if (startDayOfWeek !== 1) {
+        if (startDayOfWeek !== 1) { // If start date wasn't a Monday
             effectiveDiffDays += (7 - startDayOfWeek + 1);
         }
     }
@@ -138,21 +138,22 @@ function rotateSeatingRowWiseJS(seatingArrangement, rotations) {
 
 // --- Display Seating Function ---
 function displaySeating() {
-    const dateInput = document.getElementById('dateInput').value; // Get value from date input
+    const year = parseInt(document.getElementById('yearInput').value);
+    const month = parseInt(document.getElementById('monthInput').value);
+    const day = parseInt(document.getElementById('dayInput').value);
     const errorMessage = document.getElementById('errorMessage');
     const seatingOutput = document.getElementById('seatingOutput');
 
-    if (!dateInput) {
-        showMessage("Please select a valid date.", "error");
+    if (isNaN(year) || isNaN(month) || isNaN(day) ||
+        year < 2024 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31) {
+        showMessage("Please enter a valid date (Year: 2024-2099, Month: 1-12, Day: 1-31).", "error");
         seatingOutput.innerHTML = '';
         return;
     }
 
-    const [year, month, day] = dateInput.split('-').map(Number);
-
     const testDate = new Date(year, month - 1, day);
     if (testDate.getFullYear() !== year || testDate.getMonth() !== month - 1 || testDate.getDate() !== day) {
-        showMessage("Invalid date for the selected month.", "error");
+        showMessage("Invalid day for the selected month.", "error");
         seatingOutput.innerHTML = '';
         return;
     }
@@ -163,13 +164,14 @@ function displaySeating() {
 
     let html = '';
     rotatedSeating.forEach((row, rowIndex) => {
+        // Adding the row-wrapper and row-number elements back, as per the new UI design
         html += `<div class="seating-row-wrapper">`;
         html += `<div class="row-number">Row ${rowIndex + 1}</div>`;
 
         html += `<div class="seating-row">`;
         row.forEach((seat, seatIndex) => {
             html += `<div class="seat-item" data-row="${rowIndex}" data-seat="${seatIndex}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event)">`;
-            seat.forEach((student, studentInSeatIndex) => {
+            seat.forEach((student, studentInSeatIndex) => { // Added studentInSeatIndex for correct data-attribute
                 if (student) {
                     html += `<div class="student-draggable" draggable="true" ondragstart="dragStart(event)" data-student-index="${studentInSeatIndex}">${student}</div>`;
                 } else {
@@ -201,7 +203,7 @@ function dragStart(event) {
     const parentSeatItem = studentElement.closest('.seat-item');
     draggedStudentData.fromRow = parseInt(parentSeatItem.dataset.row);
     draggedStudentData.fromSeat = parseInt(parentSeatItem.dataset.seat);
-    draggedStudentData.fromStudentIndexInSeat = parseInt(studentElement.dataset.studentIndex);
+    draggedStudentData.fromStudentIndexInSeat = parseInt(studentElement.dataset.studentIndex); // Get index from data-attribute
 
     event.dataTransfer.setData("text/plain", draggedStudentData.name || "Empty"); // Set data for Firefox compatibility
     studentElement.classList.add('dragging');
@@ -245,7 +247,7 @@ function drop(event) {
         // Dropped directly onto an existing student element (or an empty-spot div)
         targetIndexInSeat = parseInt(droppedOnElement.dataset.studentIndex);
     } else {
-        // Dropped onto an empty part of a seat-item (not directly on a student-draggable)
+        // Dropped onto an empty part of a seat-item.
         // Find the first available (null) slot in the target seat.
         targetIndexInSeat = targetSeatArray.indexOf(null);
         if (targetIndexInSeat === -1 && targetSeatArray.length < 2) {
@@ -281,7 +283,7 @@ function drop(event) {
         while (filtered.length < 2) {
             filtered.push(null);
         }
-        return filtered.slice(0, 2); // Ensure it doesn't exceed 2 elements if somehow it did
+        return filtered.slice(0, 2); // Ensure it doesn't exceed 2 elements
     }
 
     initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat] = normalizeSeatArray(initialSeating[draggedStudentData.fromRow][draggedStudentData.fromSeat]);
@@ -368,7 +370,8 @@ async function resetSeatingToDefault() {
             });
             showMessage("Seating arrangement reset to default and saved to cloud.", "warning");
             displaySeating();
-        } catch (e) {
+        }
+        catch (e) {
             console.error("Error resetting seating to default in Firestore: ", e);
             showMessage("Error resetting seating arrangement to default. Please try again.", "error");
         }
