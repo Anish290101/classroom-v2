@@ -312,10 +312,10 @@ function drop(event) {
 async function saveSeating(showSuccessMessage = true) {
     const message = document.getElementById('errorMessage');
     try {
-        // Use set() to overwrite the document with the current initialSeating.
-        // The seating array is stored under a field named 'arrangement'.
+        // Convert the nested array to a JSON string before saving
+        const seatingJson = JSON.stringify(initialSeating);
         await db.collection(SEATING_COLLECTION).doc(SEATING_DOCUMENT).set({
-            arrangement: initialSeating
+            arrangement: seatingJson // Store the JSON string
         });
 
         if (showSuccessMessage) {
@@ -353,8 +353,8 @@ async function loadSeating() {
         const doc = await docRef.get(); // Attempt to get the document from Firestore
 
         if (doc.exists && doc.data().arrangement) {
-            // Data found in Firestore, load it
-            initialSeating = doc.data().arrangement;
+            // Data found in Firestore, parse the JSON string back into an array
+            initialSeating = JSON.parse(doc.data().arrangement);
             message.textContent = "Saved seating arrangement loaded from cloud.";
             message.className = 'info-message';
             setTimeout(() => {
@@ -407,9 +407,11 @@ async function resetSeatingToDefault() {
         initialSeating = JSON.parse(JSON.stringify(defaultSeating)); // Ensure a deep copy to truly reset
 
         try {
+            // Convert the nested array to a JSON string before saving
+            const seatingJson = JSON.stringify(initialSeating);
             // Overwrite the Firestore document with the default seating
             await db.collection(SEATING_COLLECTION).doc(SEATING_DOCUMENT).set({
-                arrangement: initialSeating
+                arrangement: seatingJson // Store the JSON string
             });
             // Also remove the old localStorage item if it exists (for clean up)
             localStorage.removeItem('savedSeating');
