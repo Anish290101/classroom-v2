@@ -134,8 +134,6 @@ function rotateSeatingRowWiseJS(seatingArrangement, rotations) {
 }
 
 // --- Display Seating Function ---
-let currentSeating = []; // Store the currently displayed seating for drag & drop
-
 function displaySeating() {
     const year = parseInt(document.getElementById('yearInput').value);
     const month = parseInt(document.getElementById('monthInput').value);
@@ -165,12 +163,19 @@ function displaySeating() {
 
     const rotationWeek = getRotationWeekFromDateJS(year, month, day);
     // Use the potentially loaded 'initialSeating' for rotation
-    const rotatedSeating = rotateSeatingRowWiseJS(initialSeating, rotationWeek);
-    currentSeating = JSON.parse(JSON.stringify(rotatedSeating)); // Deep copy for drag & drop
+    // Deep copy initialSeating BEFORE rotating for display.
+    // This ensures drag and drop always works on the current (potentially modified) initialSeating
+    // and that the rotation is applied to that base.
+    const displayArrangement = JSON.parse(JSON.stringify(initialSeating));
+    const rotatedSeating = rotateSeatingRowWiseJS(displayArrangement, rotationWeek);
 
     let html = '';
     rotatedSeating.forEach((row, rowIndex) => {
-        html += `<div class="seating-row">`;
+        // Add a div for the row number
+        html += `<div class="seating-row-wrapper">`; // New wrapper for row number and seats
+        html += `<div class="row-number">Row ${rowIndex + 1}</div>`; // Row number display
+
+        html += `<div class="seating-row">`; // Existing seating-row div
         row.forEach((seat, seatIndex) => {
             html += `<div class="seat-item" data-row="${rowIndex}" data-seat="${seatIndex}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event)">`;
             seat.forEach(student => {
@@ -182,118 +187,156 @@ function displaySeating() {
             });
             html += `</div>`;
         });
-        html += `</div>`;
+        html += `</div>`; // Close existing seating-row div
+        html += `</div>`; // Close new seating-row-wrapper div
     });
 
     seatingOutput.innerHTML = html;
 }
 
 // --- Drag and Drop Logic ---
-let draggedStudent = null;
+let draggedStudentName = null; // Stores the actual name dragged
 let draggedFromRow = null;
 let draggedFromSeat = null;
+let draggedFromStudentIndexInSeat = null; // Index within the seat (0 or 1)
 
 function dragStart(event) {
-    draggedStudent = event.target.textContent;
-    const parentSeatItem = event.target.closest('.seat-item');
+    const studentElement = event.target;
+    // Get the student's name, treat "Empty" visual as null for internal logic
+    draggedStudentName = studentElement.classList.contains('empty-spot') ? null : studentElement.textContent;
+
+    const parentSeatItem = studentElement.closest('.seat-item');
     draggedFromRow = parseInt(parentSeatItem.dataset.row);
     draggedFromSeat = parseInt(parentSeatItem.dataset.seat);
 
-    event.dataTransfer.setData("text/plain", draggedStudent);
-    event.target.classList.add('dragging');
+    // Find the exact index of the dragged student within its seat's array
+    const seatArray = initialSeating[draggedFromRow][draggedFromSeat];
+    draggedFromStudentIndexInSeat = seatArray.indexOf(draggedStudentName);
+
+    event.dataTransfer.setData("text/plain", draggedStudentName || "Empty"); // Set data for transfer
+    studentElement.classList.add('dragging');
 }
 
 function dragOver(event) {
     event.preventDefault(); // Allows drop
-    event.target.classList.add('drag-over');
+    const targetElement = event.target.closest('.seat-item');
+    if (targetElement) {
+        targetElement.classList.add('drag-over');
+    }
 }
 
 function dragLeave(event) {
-    event.target.classList.remove('drag-over');
+    const targetElement = event.target.closest('.seat-item');
+    if (targetElement) {
+        targetElement.classList.remove('drag-over');
+    }
 }
 
 function drop(event) {
     event.preventDefault();
-    event.target.classList.remove('drag-over');
+    document.querySelectorAll('.seat-item.drag-over').forEach(el => el.classList.remove('drag-over')); // Clean up drag-over class
 
     const droppedOnSeatItem = event.target.closest('.seat-item');
+    if (!droppedOnSeatItem) return; // Dropped outside a valid seat
+
     const droppedOnRow = parseInt(droppedOnSeatItem.dataset.row);
     const droppedOnSeat = parseInt(droppedOnSeatItem.dataset.seat);
 
-    if (draggedFromRow === null || draggedFromSeat === null) return; // Should not happen
-
-    let targetStudentDiv = null;
-    if (event.target.classList.contains('student-draggable')) {
-        targetStudentDiv = event.target;
-    } else {
-        // If dropped directly on the seat-item div, find the student inside
-        targetStudentDiv = droppedOnSeatItem.querySelector('.student-draggable');
+    // If source or target is invalid, or dragging onto itself, do nothing
+    if (draggedFromRow === null || draggedFromSeat === null ||
+        (draggedFromRow === droppedOnRow && draggedFromSeat === droppedOnSeat)) {
+        document.querySelectorAll('.student-draggable.dragging').forEach(el => el.classList.remove('dragging'));
+        return;
     }
 
-    const targetStudentName = targetStudentDiv ? targetStudentDiv.textContent : null;
+    const targetSeatArray = initialSeating[droppedOnRow][droppedOnSeat];
 
-    // Remove the dragged student from its original position
-    const originalSeatContent = initialSeating[draggedFromRow][draggedFromSeat];
-    const originalStudentIndex = originalSeatContent.indexOf(draggedStudent === "Empty" ? null : draggedStudent);
+    // --- Core Logic for Swapping/Moving ---
 
-    if (originalStudentIndex > -1) {
-        originalSeatContent[originalStudentIndex] = null; // Mark original spot as empty
+    // 1. Remove dragged student from original position
+    if (draggedFromStudentIndexInSeat !== null && initialSeating[draggedFromRow] && initialSeating[draggedFromRow][draggedFromSeat]) {
+        initialSeating[draggedFromRow][draggedFromSeat][draggedFromStudentIndexInSeat] = null;
+    }
+
+    // 2. Determine target position within the seat
+    let targetIndexInSeat = -1;
+    const targetStudentElement = event.target.closest('.student-draggable');
+
+    if (targetStudentElement) {
+        // Dropped directly ON a student element
+        const targetStudentName = targetStudentElement.classList.contains('empty-spot') ? null : targetStudentElement.textContent;
+        targetIndexInSeat = targetSeatArray.indexOf(targetStudentName);
+        if (targetIndexInSeat === -1) {
+            // This case handles if the target student name was null but visually "Empty"
+            if (targetStudentName === null) {
+                targetIndexInSeat = targetSeatArray.indexOf(null);
+            }
+        }
+    }
+
+    if (targetIndexInSeat === -1) { // If dropped on a seat-item but not directly on a specific student, or target student not found
+        // Find the first available (null) spot, or the first spot if no nulls
+        targetIndexInSeat = targetSeatArray.indexOf(null);
+        if (targetIndexInSeat === -1) {
+            targetIndexInSeat = 0; // Default to first spot if full
+        }
     }
 
 
-    if (targetStudentName && targetStudentName !== "Empty") {
-        // Drop on another student: swap places
-        const targetStudentActual = currentSeating[droppedOnRow][droppedOnSeat].find(name => name !== null); // Find the actual student name
+    // 3. Place dragged student
+    const originalContentAtTarget = targetSeatArray[targetIndexInSeat];
+    targetSeatArray[targetIndexInSeat] = draggedStudentName; // Place the dragged student
 
-        // Find the index of the student being dropped ONTO
-        const targetStudentIndex = initialSeating[droppedOnRow][droppedOnSeat].indexOf(targetStudentActual);
+    // 4. Place original content from target back into source, if needed (swapping)
+    if (originalContentAtTarget !== null && originalContentAtTarget !== undefined) {
+        // Find an empty spot in the original seat, or replace the dragged student's original spot
+        let placedOriginal = false;
+        const sourceSeatArray = initialSeating[draggedFromRow][draggedFromSeat];
 
-        if (targetStudentIndex > -1) {
-            initialSeating[draggedFromRow][draggedFromSeat][originalStudentIndex] = targetStudentActual; // Move target student to original spot
-            initialSeating[droppedOnRow][droppedOnSeat][targetStudentIndex] = (draggedStudent === "Empty" ? null : draggedStudent); // Move dragged student to target spot
+        if (draggedFromStudentIndexInSeat !== -1 && sourceSeatArray[draggedFromStudentIndexInSeat] === null) {
+             sourceSeatArray[draggedFromStudentIndexInSeat] = originalContentAtTarget;
+             placedOriginal = true;
         } else {
-             // If target student was null, then replace null with dragged student
-             if (initialSeating[droppedOnRow][droppedOnSeat][0] === null) {
-                initialSeating[droppedOnRow][droppedOnSeat][0] = (draggedStudent === "Empty" ? null : draggedStudent);
-             } else if (initialSeating[droppedOnRow][droppedOnSeat][1] === null) {
-                initialSeating[droppedOnRow][droppedOnSeat][1] = (draggedStudent === "Empty" ? null : draggedStudent);
+            // Find another null spot in the original seat
+            const emptySpotInOriginal = sourceSeatArray.indexOf(null);
+            if (emptySpotInOriginal !== -1) {
+                sourceSeatArray[emptySpotInOriginal] = originalContentAtTarget;
+                placedOriginal = true;
+            }
+        }
+        // If no easy spot, and it was a swap onto a filled spot, and it was a 2-person seat, prioritize filling the other spot
+        if (!placedOriginal && sourceSeatArray.length === 2) {
+             if (sourceSeatArray[0] === null && sourceSeatArray[1] !== null) { // If first spot is empty, move second to first
+                 sourceSeatArray[0] = sourceSeatArray[1];
+                 sourceSeatArray[1] = null;
+                 placedOriginal = true;
              }
         }
-    } else {
-        // Drop on an "Empty" spot or directly on a seat-item
-        const targetSeat = initialSeating[droppedOnRow][droppedOnSeat];
-        let placed = false;
-        for(let i=0; i < targetSeat.length; i++) {
-            if (targetSeat[i] === null) {
-                targetSeat[i] = (draggedStudent === "Empty" ? null : draggedStudent);
-                placed = true;
-                break;
-            }
-        }
-        if (!placed) {
-            // If both spots are taken, it means the 'Empty' visual was part of a full seat.
-            // Restore the dragged student to its original position if it was a real student.
-            if (draggedStudent !== "Empty" && originalStudentIndex > -1) {
-                 initialSeating[draggedFromRow][draggedFromSeat][originalStudentIndex] = (draggedStudent === "Empty" ? null : draggedStudent);
-            }
-        }
     }
 
-    // Clean up nulls in the original seat if a student moved from a 2-person seat
-    const originalSeat = initialSeating[draggedFromRow][draggedFromSeat];
-    if (originalSeat.length === 2 && originalSeat[0] === null && originalSeat[1] !== null) {
-        // Shift student to the first position if first is empty and second is not
-        initialSeating[draggedFromRow][draggedFromSeat] = [originalSeat[1], null];
-    }
 
+    // --- Post-drop cleanup and re-arrangement within seats ---
+    // This part ensures that if a student moves from a 2-person seat, the remaining student shifts to the first spot.
+    // Also, ensures no more than 2 students per seat.
+    // This is vital for maintaining the structure [[student1, student2], [student3, null]]
+    initialSeating[draggedFromRow][draggedFromSeat] = initialSeating[draggedFromRow][draggedFromSeat].filter(s => s !== null);
+    while (initialSeating[draggedFromRow][draggedFromSeat].length < 2) {
+        initialSeating[draggedFromRow][draggedFromSeat].push(null);
+    }
+    // Also for the dropped-on seat
+    initialSeating[droppedOnRow][droppedOnSeat] = initialSeating[droppedOnRow][droppedOnSeat].filter(s => s !== null);
+    while (initialSeating[droppedOnRow][droppedOnSeat].length < 2) {
+        initialSeating[droppedOnRow][droppedOnSeat].push(null);
+    }
 
     // Re-display the seating chart to reflect changes
     displaySeating();
 
     // Reset drag variables
-    draggedStudent = null;
+    draggedStudentName = null;
     draggedFromRow = null;
     draggedFromSeat = null;
+    draggedFromStudentIndexInSeat = null;
 
     // Remove dragging class from all elements
     document.querySelectorAll('.student-draggable.dragging').forEach(el => {
